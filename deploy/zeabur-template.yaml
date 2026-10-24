@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://schema.zeabur.app/template.json
+apiVersion: zeabur.com/v1
+kind: Template
+metadata:
+  name: Open Design
+spec:
+  description: |
+    Open Design is a local-first design generation platform powered by AI coding agents.
+    It provides skills, design systems, and a plugin ecosystem for creating web artifacts.
+  tags:
+    - Tool
+  variables:
+    - key: PUBLIC_DOMAIN
+      type: DOMAIN
+      name: Domain
+      description: Public domain for Open Design
+  services:
+    - name: open-design
+      template: PREBUILT_V2
+      domainKey: PUBLIC_DOMAIN
+      spec:
+        source:
+          image: ghcr.io/nexu-io/od:latest
+        ports:
+          - id: web
+            port: 7456
+            type: HTTP
+        volumes:
+          - id: data
+            dir: /app/.od
+        env:
+          NODE_ENV:
+            default: production
+          NODE_OPTIONS:
+            default: "--max-old-space-size=192"
+          OD_BIND_HOST:
+            default: "0.0.0.0"
+          OD_PORT:
+            default: "7456"
+          OD_WEB_PORT:
+            default: "7456"
+          OD_ALLOWED_ORIGINS:
+            default: ${ZEABUR_WEB_URL}
+          OD_DISABLE_API_AUTH:
+            default: "true"

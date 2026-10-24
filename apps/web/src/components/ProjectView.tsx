@@ -6775,6 +6775,42 @@ export function ProjectView({
           .map((run) => [run.assistantMessageId!, run]),
       );
 
+      // The replay loop below is a sequential waterfall: each recoverable
+      // message awaited its own `/api/runs/:id` read. In a long conversation
+      // that became 10+ serial tunnel round trips before the project settled.
+      // Pre-scan the same candidates and probe them in parallel; the loop
+      // still fetches anything the scan missed, so this is a latency hint and
+      // not a correctness dependency.
+      const probeRunIds = new Set<string>();
+      for (const message of messages) {
+        if (message.role !== 'assistant' || !message.runId) continue;
+        const replayable =
+          isActiveRunStatus(message.runStatus)
+          || shouldReplayTerminalRunMessage(message)
+          || hasGenericDisconnectFailureEvent(message)
+          || (message.runStatus === 'failed' && !message.content && !(message.producedFiles?.length))
+          || Boolean(message.strategyTaskExecutionId && message.runStatus === 'succeeded');
+        if (!replayable) continue;
+        if (finalizingLocalRunIdsRef.current.has(message.runId)) continue;
+        if (reattachControllersRef.current.has(message.runId)) continue;
+        if (completedReattachRunsRef.current.has(message.runId)) continue;
+        if ((genericDisconnectBackoffUntilRef.current.get(message.runId) ?? 0) > Date.now()) continue;
+        probeRunIds.add(message.runId);
+      }
+      const preloadedRunStatus = new Map<
+        string,
+        Awaited<ReturnType<typeof fetchChatRunStatus>>
+      >();
+      await Promise.all(
+        [...probeRunIds].map(async (id) => {
+          preloadedRunStatus.set(
+            id,
+            await fetchChatRunStatus(id, projectRunWorkspaceContext).catch(() => null),
+          );
+        }),
+      );
+      if (cancelled) return;
+
       for (const message of messages) {
         if (cancelled) return;
         if (message.role !== 'assistant') continue;
@@ -6863,7 +6899,9 @@ export function ProjectView({
         }
 
         const physicalStatus = fallbackRun
-          ?? await fetchChatRunStatus(runId, projectRunWorkspaceContext);
+          ?? (preloadedRunStatus.has(runId)
+            ? preloadedRunStatus.get(runId) ?? null
+            : await fetchChatRunStatus(runId, projectRunWorkspaceContext));
         if (cancelled) return;
         if (!physicalStatus) {
           // A missing status response cannot invalidate persisted success.

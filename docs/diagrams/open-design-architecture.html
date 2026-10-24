@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OpenDesign — Codebase Map</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --ink: #14161a;
+    --ink-2: #4a5160;
+    --ink-3: #767e8d;
+    --line: #dfe3ea;
+    --line-2: #c8cedb;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    --c-client: #5b5bd6;
+    --c-client-bg: #eeeefc;
+    --c-edge: #64748b;
+    --c-edge-bg: #eef1f6;
+    --c-core: #d97706;
+    --c-core-bg: #fff5e6;
+    --c-content: #0f9d58;
+    --c-content-bg: #e9f8f0;
+    --c-runtime: #9333ea;
+    --c-runtime-bg: #f6ecfe;
+    --c-store: #2563eb;
+    --c-store-bg: #eaf1fe;
+    --c-pkg: #0e7490;
+    --c-pkg-bg: #e8f5f8;
+    --c-tool: #57534e;
+    --c-tool-bg: #f1efed;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  header.top { margin-bottom: 28px; }
+  .eyebrow {
+    font: 600 11px/1 var(--mono);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  h1 { font-size: 30px; line-height: 1.15; margin: 8px 0 6px; letter-spacing: -.02em; }
+  h1 small { font-weight: 500; color: var(--ink-3); font-size: 15px; letter-spacing: 0; }
+  .lede { color: var(--ink-2); max-width: 74ch; margin: 0; }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 999px; padding: 4px 11px;
+    font: 500 12px/1.4 var(--mono); color: var(--ink-2);
+  }
+  .chip b { color: var(--ink); font-weight: 600; }
+
+  /* ---- figure scaffolding ---- */
+  figure.diagram {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 26px 26px 30px;
+    margin: 26px 0 0;
+    box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 10px 30px -18px rgba(16,24,40,.25);
+  }
+  figure.diagram > figcaption {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  figure.diagram h2 { font-size: 17px; margin: 0; letter-spacing: -.01em; }
+  figure.diagram .sub { color: var(--ink-3); font-size: 12.5px; }
+  hr.rule { border: 0; border-top: 1px solid var(--line); margin: 16px 0 22px; }
+
+  /* ---- bands ---- */
+  .band { position: relative; }
+  .band-label {
+    display: flex; align-items: center; gap: 8px;
+    font: 600 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+    color: var(--ink-3); margin-bottom: 9px;
+  }
+  .band-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  .row { display: grid; gap: 12px; }
+  .row.c2 { grid-template-columns: repeat(2, 1fr); }
+  .row.c3 { grid-template-columns: repeat(3, 1fr); }
+  .row.c4 { grid-template-columns: repeat(4, 1fr); }
+  .row.c5 { grid-template-columns: repeat(5, 1fr); }
+
+  .box {
+    border: 1px solid var(--line-2);
+    border-radius: 11px;
+    background: #fff;
+    padding: 11px 13px;
+    min-width: 0;
+  }
+  .box .t { font-weight: 650; font-size: 13px; letter-spacing: -.005em; display: block; }
+  .box .p {
+    display: block; font: 500 11px/1.5 var(--mono); color: var(--ink-3);
+    margin-top: 3px; word-break: break-word;
+  }
+  .box .d { display: block; color: var(--ink-2); font-size: 11.5px; margin-top: 5px; }
+  .box code, .route code, .lede code {
+    font: 500 0.92em/1.4 var(--mono);
+    background: rgba(20, 22, 26, .06);
+    padding: 1px 4px; border-radius: 4px;
+  }
+  .box .list { margin: 6px 0 0; padding: 0; list-style: none; }
+  .box .list li {
+    font: 500 11px/1.65 var(--mono); color: var(--ink-2);
+    display: flex; gap: 6px; align-items: baseline;
+  }
+  .box .list li::before { content: "·"; color: var(--line-2); }
+
+  .box.client  { border-color: color-mix(in srgb, var(--c-client) 35%, #fff); background: var(--c-client-bg); }
+  .box.client  .t { color: #3b3b9c; }
+  .box.edge    { border-color: color-mix(in srgb, var(--c-edge) 30%, #fff); background: var(--c-edge-bg); }
+  .box.edge    .t { color: #3f4a5a; }
+  .box.core    { border-color: color-mix(in srgb, var(--c-core) 40%, #fff); background: var(--c-core-bg); }
+  .box.core    .t { color: #8a4a03; }
+  .box.content { border-color: color-mix(in srgb, var(--c-content) 32%, #fff); background: var(--c-content-bg); }
+  .box.content .t { color: #0a6b3c; }
+  .box.runtime { border-color: color-mix(in srgb, var(--c-runtime) 30%, #fff); background: var(--c-runtime-bg); }
+  .box.runtime .t { color: #6d23a8; }
+  .box.store   { border-color: color-mix(in srgb, var(--c-store) 30%, #fff); background: var(--c-store-bg); }
+  .box.store   .t { color: #1a4bb5; }
+  .box.pkg     { border-color: color-mix(in srgb, var(--c-pkg) 30%, #fff); background: var(--c-pkg-bg); }
+  .box.pkg     .t { color: #0b5666; }
+  .box.tool    { border-color: color-mix(in srgb, var(--c-tool) 26%, #fff); background: var(--c-tool-bg); }
+  .box.tool    .t { color: #45403b; }
+
+  /* ---- connectors ---- */
+  .flow { display: flex; justify-content: center; padding: 10px 0 2px; }
+  .arrow {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: var(--ink-3);
+  }
+  .arrow .stem { width: 2px; height: 16px; background: var(--line-2); border-radius: 2px; }
+  .arrow .head {
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--line-2);
+  }
+  .arrow .lbl {
+    font: 500 11px/1.3 var(--mono); color: var(--ink-3);
+    background: var(--panel); padding: 2px 8px; border: 1px dashed var(--line-2);
+    border-radius: 999px; margin-bottom: 4px; text-align: center;
+  }
+
+  .fan { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding-top: 4px; }
+  .fan .arrow .lbl { white-space: nowrap; }
+
+  /* ---- daemon internals ---- */
+  .core-panel {
+    border: 1px solid color-mix(in srgb, var(--c-core) 40%, #fff);
+    background: linear-gradient(180deg, #fffaf1, #fff6e9);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .core-panel > .head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .core-panel > .head .t { font-weight: 700; font-size: 14px; }
+  .core-panel > .head .p { font: 500 11px/1.4 var(--mono); color: #8a4a03; }
+  .grid-inner { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+  .section-title {
+    font: 700 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-3); margin: 0 0 8px;
+  }
+  .stack { display: grid; gap: 8px; }
+
+  .route {
+    border: 1px solid var(--line); border-radius: 9px; background: #fff;
+    padding: 9px 11px;
+  }
+  .route .t { font-weight: 650; font-size: 12.5px; }
+  .route .p { font: 500 10.5px/1.55 var(--mono); color: var(--ink-3); margin-top: 2px; word-break: break-word; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 18px; }
+  .legend .item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); }
+  .legend .swatch { width: 12px; height: 12px; border-radius: 4px; border: 1px solid var(--line-2); }
+
+  .note {
+    margin-top: 20px; padding: 13px 15px; border-radius: 11px;
+    background: #fbfbfd; border: 1px solid var(--line);
+    color: var(--ink-2); font-size: 12.5px;
+  }
+  .note b { color: var(--ink); }
+  .note code { font: 500 11.5px var(--mono); background: #eff1f5; padding: 1px 5px; border-radius: 5px; }
+
+  footer.foot { margin-top: 26px; color: var(--ink-3); font-size: 12px; }
+  footer.foot code { font: 500 11.5px var(--mono); }
+
+  @media (max-width: 900px) {
+    .row.c3, .row.c4, .row.c5, .grid-inner { grid-template-columns: 1fr 1fr; }
+    .fan { grid-template-columns: 1fr; }
+    .fan .arrow { flex-direction: row; }
+  }
+  @media (max-width: 620px) {
+    .row.c2, .row.c3, .row.c4, .row.c5, .grid-inner { grid-template-columns: 1fr; }
+  }
+  @media print {
+    body { background: #fff; }
+    figure.diagram { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="eyebrow">Codebase map</div>
+    <h1>OpenDesign <small>— local-first design workspace</small></h1>
+    <p class="lede">
+      Two views: the runtime topology (who talks to whom, and what runs where) and the
+      daemon's internal composition (how one Express process is assembled).
+      Boundaries, not file inventory — ownership rules stay in the layer <code>AGENTS.md</code> files.
+    </p>
+    <div class="meta">
+      <span class="chip"><b>open-design-v0.26.1</b></span>
+      <span class="chip">Node <b>24</b> · pnpm workspace</span>
+      <span class="chip">Next.js <b>16</b> + React <b>18</b></span>
+      <span class="chip">Express + <b>better-sqlite3</b></span>
+      <span class="chip"><b>5</b> apps · <b>16</b> packages</span>
+      <span class="chip">source: <code>docs/architecture.md</code></span>
+    </div>
+  </header>
+
+  <!-- ══════════════════════ VIEW 1 ══════════════════════ -->
+  <figure class="diagram">
+    <figcaption>
+      <h2>1 · Runtime topology</h2>
+      <span class="sub">Surfaces → daemon → runtimes, with the content and storage layers it owns</span>
+    </figcaption>
+    <hr class="rule" />
+
+    <div class="band">
+      <div class="band-label">Surfaces</div>
+      <div class="row c5">
+        <div class="box client">
+          <span class="t">Web app</span>
+          <span class="p">apps/web</span>
+          <span class="d">Next.js 16 App Router shell: chat, file workspace, preview, motion studio, share/review comments, settings, marketplace.</span>
+        </div>
+        <div class="box client">
+          <span class="t">Desktop</span>
+          <span class="p">apps/desktop → apps/packaged</span>
+          <span class="d">Electron shell; discovers the web URL via sidecar IPC instead of guessing a port.</span>
+        </div>
+        <div class="box client">
+          <span class="t">od CLI</span>
+          <span class="p">apps/daemon/bin/od.mjs</span>
+          <span class="d">Machine-readable surface over the same daemon HTTP APIs — not a second implementation.</span>
+        </div>
+        <div class="box client">
+          <span class="t">Coding agents</span>
+          <span class="p">MCP (stdio / live artifacts)</span>
+          <span class="d">External CLI agents drive projects through the daemon's MCP surface.</span>
+        </div>
+        <div class="box client">
+          <span class="t">Extensions</span>
+          <span class="p">clipper/ · figma-plugin/</span>
+          <span class="d">Clip web assets into the OD Library; import Figma frames.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="arrow">
+        <span class="lbl">same-origin HTTP + SSE &nbsp;·&nbsp; /api/* · /artifacts/* · /frames/*</span>
+        <span class="stem"></span><span class="head"></span>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="band-label">Product authority</div>
+      <div class="row">
+        <div class="box core">
+          <span class="t">Daemon — Express + SQLite</span>
+          <span class="p">apps/daemon &nbsp;·&nbsp; src/server.ts composes the app; src/routes/* own focused HTTP boundaries</span>
+          <span class="d">
+            Persistence · file/upload/version/preview/import/export · agent detection, launch, run
+            bookkeeping, cancellation · prompt composition · plugins, MCP, media, automation,
+            memory, library, design systems · static serving + loopback/security policy.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fan">
+      <div class="arrow">
+        <span class="lbl">resolves content</span>
+        <span class="stem"></span><span class="head"></span>
+      </div>
+      <div class="arrow">
+        <span class="lbl">spawns / proxies</span>
+        <span class="stem"></span><span class="head"></span>
+      </div>
+      <div class="arrow">
+        <span class="lbl">reads &amp; writes</span>
+        <span class="stem"></span><span class="head"></span>
+      </div>
+    </div>
+
+    <div class="row c3">
+      <div class="box content">
+        <span class="t">Content registries</span>
+        <span class="p">bundled roots, re-scanned per listing request</span>
+        <ul class="list">
+          <li>skills/ · 171 · /api/skills</li>
+          <li>design-templates/ · 115</li>
+          <li>design-systems/ · 154</li>
+          <li>plugins/_official · registry · community</li>
+          <li>craft/ · prompt-templates/</li>
+        </ul>
+        <span class="d">A user entry can shadow a bundled entry with the same id.</span>
+      </div>
+
+      <div class="box runtime">
+        <span class="t">Runtime engine</span>
+        <span class="p">src/runtimes/registry.ts → one RuntimeAgentDef per agent</span>
+        <ul class="list">
+          <li>27 definitions / 26 CLIs</li>
+          <li>detection → resolveAgentLaunch()</li>
+          <li>agent-protocol/: acp · codex-app-server · pi-rpc · dsh-profile</li>
+          <li>BYOK proxy: /api/proxy/{provider}/stream</li>
+        </ul>
+        <span class="d">Structured events, file writes, or text output stream back over SSE.</span>
+      </div>
+
+      <div class="box store">
+        <span class="t">Persistence</span>
+        <span class="p">resolved once: OD_DATA_DIR → RUNTIME_DATA_DIR</span>
+        <ul class="list">
+          <li>SQLite (better-sqlite3)</li>
+          <li>managed project workspaces</li>
+          <li>artifacts · chat-artifact snapshots</li>
+          <li>credentials · caches · automation &amp; plugin state</li>
+        </ul>
+        <span class="d">Folder-import projects use the external validated <code>baseDir</code> instead of the managed root.</span>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="arrow">
+        <span class="lbl">spawn(cli, [args], { cwd: project workspace }) &nbsp;→&nbsp; structured events / files / text &nbsp;→&nbsp; SSE</span>
+        <span class="stem"></span><span class="head"></span>
+      </div>
+    </div>
+
+    <div class="row c2">
+      <div class="box runtime">
+        <span class="t">Spawned agent processes</span>
+        <span class="p">claude · codex · opencode/byok-opencode · amr · devin · hermes · kimi · qwen · qoder · copilot · cursor · amp · pi · kiro · kilo · vibe · deepseek(+harness) · aider · antigravity · codebuddy · reasonix · mimo · atomcode · trae · grok-build …</span>
+        <span class="d">Each definition declares launch, prompt delivery, model discovery, auth probing, stream format, and capabilities.</span>
+      </div>
+      <div class="box store">
+        <span class="t">External services</span>
+        <span class="p">BYOK / OpenAI-compatible providers · ElevenLabs · image &amp; video model routers · GitHub · Composio connectors</span>
+        <span class="d">External fetch and proxy routes enforce URL/SSRF policy at the daemon boundary.</span>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="arrow">
+        <span class="lbl">shared, dependency-free boundaries</span>
+        <span class="stem"></span><span class="head"></span>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="band-label">packages/ — pure boundaries</div>
+      <div class="row c4">
+        <div class="box pkg">
+          <span class="t">contracts</span>
+          <span class="p">pure TS DTOs + prompt &amp; execution-profile contracts</span>
+          <span class="d">No Next/Express/fs/SQLite/browser imports.</span>
+        </div>
+        <div class="box pkg">
+          <span class="t">sidecar · sidecar-proto · standalone · launcher-proto</span>
+          <span class="p">process identity, transport, generation fencing, exact distribution</span>
+          <span class="d">Five stamp fields: channel · namespace · source · mode · app.</span>
+        </div>
+        <div class="box pkg">
+          <span class="t">plugin-runtime · registry-protocol</span>
+          <span class="p">manifest parsing, merge/ref resolution, digests, registry schemas</span>
+          <span class="d">Callers inject I/O; no filesystem access inside.</span>
+        </div>
+        <div class="box pkg">
+          <span class="t">agui-adapter · components · host</span>
+          <span class="p">AG-UI event conversion · React primitives · renderer host bridge</span>
+          <span class="d">Keeps <code>window.__od__</code> out of app UI code.</span>
+        </div>
+        <div class="box pkg">
+          <span class="t">platform</span>
+          <span class="p">generic OS process primitives + toolchain bin discovery</span>
+          <span class="d">Single source of truth shared by daemon and packaged PATH builder.</span>
+        </div>
+        <div class="box pkg">
+          <span class="t">diagnostics · download</span>
+          <span class="p">log collection + redaction + zip · resumable verified transfers</span>
+        </div>
+        <div class="box pkg">
+          <span class="t">release · metatool</span>
+          <span class="p">channel names, version parsing, namespaces · tool output metadata</span>
+        </div>
+        <div class="box pkg">
+          <span class="t">dsh-runtime</span>
+          <span class="p">DeepSeek Harness profile runtime</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="arrow">
+        <span class="lbl">built &amp; driven by</span>
+        <span class="stem"></span><span class="head"></span>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="band-label">Lifecycle &amp; verification</div>
+      <div class="row c4">
+        <div class="box tool">
+          <span class="t">tools/dev</span>
+          <span class="p">pnpm tools-dev</span>
+          <span class="d">The only lifecycle entry point: start / stop / run / status / logs / inspect / check.</span>
+        </div>
+        <div class="box tool">
+          <span class="t">tools/pack · release · serve</span>
+          <span class="p">packaged sidecars, channel identity, release flows</span>
+        </div>
+        <div class="box tool">
+          <span class="t">e2e/ · mocks/</span>
+          <span class="p">Playwright UI + visual suites · recorded agent mocks</span>
+        </div>
+        <div class="box tool">
+          <span class="t">scripts/ · shells/terminal</span>
+          <span class="p">repo guards, bakes, sync · shell installers (sh/ps1)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch" style="background:var(--c-client-bg);border-color:var(--c-client)"></span> Surfaces</span>
+      <span class="item"><span class="swatch" style="background:var(--c-core-bg);border-color:var(--c-core)"></span> Daemon</span>
+      <span class="item"><span class="swatch" style="background:var(--c-content-bg);border-color:var(--c-content)"></span> Content</span>
+      <span class="item"><span class="swatch" style="background:var(--c-runtime-bg);border-color:var(--c-runtime)"></span> Runtime</span>
+      <span class="item"><span class="swatch" style="background:var(--c-store-bg);border-color:var(--c-store)"></span> Storage / external</span>
+      <span class="item"><span class="swatch" style="background:var(--c-pkg-bg);border-color:var(--c-pkg)"></span> Packages</span>
+      <span class="item"><span class="swatch" style="background:var(--c-tool-bg);border-color:var(--c-tool)"></span> Tooling</span>
+    </div>
+  </figure>
+
+  <!-- ══════════════════════ VIEW 2 ══════════════════════ -->
+  <figure class="diagram">
+    <figcaption>
+      <h2>2 · Daemon internals</h2>
+      <span class="sub">How one Express process is assembled — bootstrap, route domains, engines, and infrastructure</span>
+    </figcaption>
+    <hr class="rule" />
+
+    <div class="core-panel">
+      <div class="head">
+        <span class="t">startServer() — apps/daemon/src/server.ts</span>
+        <span class="p">composes the app · ~18k lines · @ts-nocheck</span>
+      </div>
+
+      <div class="grid-inner">
+        <div>
+          <p class="section-title">Bootstrap (process-wide)</p>
+          <div class="stack">
+            <div class="route">
+              <div class="t">Resolve the single data root</div>
+              <div class="p">OD_DATA_DIR → RUNTIME_DATA_DIR (+ canonical realpath alias)</div>
+            </div>
+            <div class="route">
+              <div class="t">Open databases &amp; stores</div>
+              <div class="p">storage/daemon-db.ts (better-sqlite3) · project-storage · chat-artifact snapshots</div>
+            </div>
+            <div class="route">
+              <div class="t">Register skill / template / design-system roots</div>
+              <div class="p">SKILL_ROOTS · DESIGN_TEMPLATE_ROOTS · ALL_SKILL_LIKE_ROOTS · design-systems</div>
+            </div>
+            <div class="route">
+              <div class="t">Security &amp; HTTP plumbing</div>
+              <div class="p">src/http/: origin-guard · api-errors · api-failure-journal · parse · response</div>
+            </div>
+            <div class="route">
+              <div class="t">Broadcast routes (no domain owner)</div>
+              <div class="p">GET /api/health · GET /api/version · static SPA + /artifacts + /frames serving</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p class="section-title">Runtime engine</p>
+          <div class="stack">
+            <div class="route">
+              <div class="t">runtimes/registry.ts</div>
+              <div class="p">SHIPPED_AGENT_DEFS + user local profiles → AGENT_DEFS</div>
+            </div>
+            <div class="route">
+              <div class="t">defs/ — one file per agent</div>
+              <div class="p">launch · prompt delivery · models · auth probe · stream format · capabilities</div>
+            </div>
+            <div class="route">
+              <div class="t">Engine</div>
+              <div class="p">launch.ts · detection.ts · invocation.ts · runs.ts · run-lifecycle · run-restart-recovery</div>
+            </div>
+            <div class="route">
+              <div class="t">Stream normalizers</div>
+              <div class="p">claude-stream · codex-stream · opencode-tool-events · plain-stream · qoder-stream · json-event-stream</div>
+            </div>
+            <div class="route">
+              <div class="t">agent-protocol/</div>
+              <div class="p">acp · codex-app-server · pi-rpc · dsh-profile · core</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="arrow">
+        <span class="lbl">route modules registered into server.ts — src/routes/ + domain modules</span>
+        <span class="stem"></span><span class="head"></span>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="band-label">Route domains</div>
+      <div class="row c3">
+
+        <div class="box core">
+          <span class="t">Core product</span>
+          <ul class="list">
+            <li>project/ (files, upload, artifacts, conversations, comments)</li>
+            <li>chat.ts · runs.ts · active-context.ts</li>
+            <li>chat-artifacts.ts · live-artifact.ts</li>
+            <li>handoff.ts · memory.ts</li>
+            <li>automation.ts · routine.ts</li>
+          </ul>
+          <span class="d">Persistent conversation &amp; run state; transient UI focus is its own domain.</span>
+        </div>
+
+        <div class="box content">
+          <span class="t">Content &amp; generation</span>
+          <ul class="list">
+            <li>static-resource.ts (skills + atoms)</li>
+            <li>design-systems.ts · design-system-tool.ts</li>
+            <li>plugins/ (index, marketplaces, assets)</li>
+            <li>library.ts · genui.ts</li>
+            <li>brand-routes.ts</li>
+          </ul>
+          <span class="d">Backed by packages/plugin-runtime + registry-protocol.</span>
+        </div>
+
+        <div class="box runtime">
+          <span class="t">Media, deploy &amp; tools</span>
+          <ul class="list">
+            <li>media.ts · vela.ts · xai.ts</li>
+            <li>deploy.ts (+ deployment-check)</li>
+            <li>deliverable-syntax-tool.ts</li>
+            <li>terminal.ts · browser-sessions.ts</li>
+            <li>host-tools.ts · social-share.ts · whats-new.ts</li>
+          </ul>
+          <span class="d">Turns a run's output into a finished deliverable: HTML, PDF, PPTX, ZIP, MP4.</span>
+        </div>
+
+        <div class="box pkg">
+          <span class="t">MCP surface</span>
+          <ul class="list">
+            <li>mcp-routes.ts</li>
+            <li>mcp-live-artifacts-server.ts</li>
+            <li>mcp-oauth.ts · mcp-tokens.ts</li>
+            <li>mcp-apps/ · mcp-brief.ts</li>
+            <li>mcp-managed-registration.ts</li>
+          </ul>
+          <span class="d">What lets an external coding agent create Normal Artifacts in the Active Project.</span>
+        </div>
+
+        <div class="box tool">
+          <span class="t">Workspace &amp; team</span>
+          <ul class="list">
+            <li>collab-presence.ts · collab-sync.ts</li>
+            <li>collab-context.ts</li>
+            <li>team-resources.ts · team-resource-share.ts</li>
+            <li>connectors/ (Composio catalog + service)</li>
+          </ul>
+          <span class="d">Workspace-scoped SSE invalidation, partitioned per verified Workspace/member pair.</span>
+        </div>
+
+        <div class="box tool">
+          <span class="t">Operational</span>
+          <ul class="list">
+            <li>telemetry.ts · attribution.ts</li>
+            <li>import-export-routes.ts · deploy.ts</li>
+            <li>daemon.ts (health / version)</li>
+            <li>strategy-rollout.ts</li>
+            <li>open-design-public-metadata.ts</li>
+          </ul>
+          <span class="d">Diagnostics export lives in packages/diagnostics, shared with desktop.</span>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="arrow">
+        <span class="lbl">domains are served by in-process engines</span>
+        <span class="stem"></span><span class="head"></span>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="band-label">Engine &amp; service modules</div>
+      <div class="row c4">
+        <div class="box runtime">
+          <span class="t">Run pipeline</span>
+          <ul class="list">
+            <li>agents.ts · agent-session-resume.ts</li>
+            <li>prompts/ (+ prompt-composition)</li>
+            <li>run-lifecycle-tracer.ts</li>
+            <li>run-failure-classification.ts</li>
+            <li>run-retry-policy.ts · tool-loop-guard.ts</li>
+          </ul>
+        </div>
+        <div class="box content">
+          <span class="t">Deliverables</span>
+          <ul class="list">
+            <li>artifacts/ (manifest, standalone-html, deliverable-syntax*)</li>
+            <li>chat-artifacts/</li>
+            <li>live-artifacts/</li>
+            <li>deck-export.ts · pdf-export.ts</li>
+            <li>document-preview.ts · lint-artifact.ts</li>
+          </ul>
+        </div>
+        <div class="box runtime">
+          <span class="t">Capability services</span>
+          <ul class="list">
+            <li>media/ (+ media-adapters, stock sources) · hyperframes-runtime</li>
+            <li>collab/ (share publication, comment sync, owned content)</li>
+            <li>memory*.ts (rules, extractions, connectors)</li>
+            <li>automations/ · routines.ts</li>
+            <li>library-*.ts · registry/</li>
+            <li>genui/ (events, registry, store)</li>
+          </ul>
+        </div>
+        <div class="box tool">
+          <span class="t">Cross-cutting infra</span>
+          <ul class="list">
+            <li>logging/ · observability/ · metrics/</li>
+            <li>telemetry-outbox.ts · langfuse-bridge.ts</li>
+            <li>redact.ts · api-token-auth.ts</li>
+            <li>analytics.ts · daemon-paths.ts</li>
+            <li>migration/ · legacy-data-migrator</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="arrow">
+        <span class="lbl">everything below the data root derives from one resolution</span>
+        <span class="stem"></span><span class="head"></span>
+      </div>
+    </div>
+
+    <div class="row c3">
+      <div class="box store">
+        <span class="t">SQLite</span>
+        <span class="p">storage/daemon-db.ts</span>
+        <span class="d">Projects, conversations, messages, tabs, templates, run bookkeeping, automation &amp; plugin state.</span>
+      </div>
+      <div class="box store">
+        <span class="t">Filesystem</span>
+        <span class="p">managed project workspaces · artifacts · user registries</span>
+        <span class="d">File routes resolve and validate every path against the active project root.</span>
+      </div>
+      <div class="box store">
+        <span class="t">Credentials &amp; caches</span>
+        <span class="p">daemon-owned</span>
+        <span class="d">OAuth state, API tokens, plugin asset cache — redacted per the data-root contract.</span>
+      </div>
+    </div>
+
+    <div class="note">
+      <b>Reading rule.</b> Ports are transport details, not identity: namespaces, channel identity, and
+      data roots never embed a port. A capability change has to land on all three surfaces —
+      daemon endpoint, web UI, and <code>od</code> CLI — plus the shared contract in
+      <code>packages/contracts</code>. Concrete storage paths are deliberately not shown here; the root
+      <code>AGENTS.md</code> → <b>Daemon data directory contract</b> is the only path authority.
+    </div>
+  </figure>
+
+  <footer class="foot">
+    Sources: <code>docs/architecture.md</code> · root and layer <code>AGENTS.md</code> files ·
+    <code>apps/daemon/src/server.ts</code> route registrations · <code>apps/daemon/src/runtimes/registry.ts</code>.
+    Counts (171 skills · 115 design templates · 154 design systems · 27 runtime definitions across 26 CLIs)
+    are measured directory counts in this snapshot.
+  </footer>
+
+</div>
+</body>
+</html>

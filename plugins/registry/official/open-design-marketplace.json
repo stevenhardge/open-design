@@ -12189,6 +12189,32 @@
       "license": "Apache-2.0",
       "mode": "video",
       "taskKind": "new-generation"
+    },
+    {
+      "name": "open-design/design-system-bird-site-dev",
+      "title": "Bird Site Dev",
+      "version": "0.1.0",
+      "source": "local:design-systems/bird-site-dev",
+      "publisher": {
+        "id": "open-design",
+        "url": "https://open-design.ai"
+      },
+      "capabilitiesSummary": [
+        "prompt:inject",
+        "fs:write"
+      ],
+      "description": "Dark intelligence dashboard for civic advocacy and policy research. Layered near-black surfaces, cyan accent, monospace metadata, tinted-glass badges, and high information density.",
+      "tags": [
+        "design-system",
+        "design",
+        "dark-dashboard",
+        "intelligence",
+        "civic-tech",
+        "themed-unique"
+      ],
+      "license": "MIT",
+      "mode": "design-system",
+      "taskKind": "new-generation"
     }
   ]
 }

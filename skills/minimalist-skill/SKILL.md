@@ -27,7 +27,6 @@ od:
     Design a minimalist editorial product interface with warm monochrome color, crisp typography, flat structure, and no decorative excess.
 ---
 
-
 # Protocol: Premium Utilitarian Minimalism UI Architect
 
 ## 1. Protocol Overview
@@ -71,8 +70,8 @@ Color is a scarce resource, utilized only for semantic meaning or subtle accents
   - Border-radius must be crisp: `8px` or `12px` maximum.
   - Internal padding must be generous (e.g., `24px` to `40px`).
 - Primary Call-To-Action (Buttons):
-  - Solid background `#111111`, text `#FFFFFF`.
-  - Slight border-radius (`4px` to `6px`). No box-shadow.
+  - Solid background `#111111`, text `#FFFFFF`. 
+  - Slight border-radius (`4px` to `6px`). No box-shadow. 
   - Hover state should be a subtle color shift to `#333333` or a micro-scale `transform: scale(0.98)`.
 - Tags & Status Badges:
   - Pill-shaped (`border-radius: 9999px`), very small typography (`text-xs`), uppercase with wide tracking (`letter-spacing: 0.05em`).
@@ -98,6 +97,7 @@ Motion should feel invisible — present but never distracting. The goal is quie
 - Staggered Reveals: Lists and grid items enter with a cascade delay (`animation-delay: calc(var(--index) * 80ms)`). Never mount everything at once.
 - Background Ambient Motion: Optional. A single, very slow-moving radial gradient blob (`animation-duration: 20s+`, `opacity: 0.02-0.04`) drifting behind hero sections. Must be applied to a `position: fixed; pointer-events: none` layer. Never on scrolling containers.
 - Performance: Animate exclusively via `transform` and `opacity`. No layout-triggering properties (`top`, `left`, `width`, `height`). Use `will-change: transform` sparingly and only on actively animating elements.
+- Reduced Motion (mandatory): Gate scroll-entry, staggered reveals, and ambient background motion behind `@media (prefers-reduced-motion: no-preference)`, and add a `@media (prefers-reduced-motion: reduce)` block that disables them so content appears instantly at rest. Hover and `:active` feedback may remain.
 
 ## 8. Execution Protocol
 When tasked with writing frontend code (HTML, React, Tailwind, Vue) or designing a layout:

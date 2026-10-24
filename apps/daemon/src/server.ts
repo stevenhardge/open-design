@@ -235,6 +235,7 @@ import {
   checkWindowsCmdShimCommandLineBudget,
   checkWindowsDirectExeCommandLineBudget,
   detectAgents,
+  detectAgentsCached,
   getAgentDef,
   isKnownModel,
   isKnownReasoningEffort,
@@ -3258,6 +3259,21 @@ export async function startServer({
 
   const app = express();
   installRouteRegistrationGuard(app);
+  // Server-Timing lets a caller separate daemon time from tunnel/edge time when
+  // a request feels slow (`curl -D -` shows it, and browsers record it on the
+  // resource entry). One clock read per request; the header is stamped on the
+  // first writeHead so streamed responses report time-to-first-byte.
+  app.use((_req, res, next) => {
+    const startedAt = performance.now();
+    const originalWriteHead = res.writeHead.bind(res) as (...args: any[]) => any;
+    (res as any).writeHead = (...args: any[]) => {
+      if (!res.headersSent) {
+        res.setHeader('Server-Timing', `app;dur=${(performance.now() - startedAt).toFixed(1)}`);
+      }
+      return originalWriteHead(...args);
+    };
+    next();
+  });
   // Clipper page captures are self-contained HTML with inlined images plus a
   // Figma IR, which for an image-heavy site (The Economist, news front pages)
   // runs to tens of MB — far past a normal JSON body. Give the ingest route a
@@ -3800,12 +3816,14 @@ export async function startServer({
   // Warm agent-capability probes (e.g. whether the installed Claude Code
   // build advertises --include-partial-messages) so the first /api/chat
   // hits a populated cache even if /api/agents hasn't been called yet.
+  // Use the same cached read the route uses: otherwise a cold 4-6s probe pass
+  // still lands on the first user request after every restart.
   void readAppConfig(RUNTIME_DATA_DIR)
     .then((config) => {
       orbitService.configure(config.orbit);
-      return detectAgents(config.agentCliEnv ?? {});
+      return detectAgentsCached(config.agentCliEnv ?? {});
     })
-    .catch(() => detectAgents().catch(() => {}));
+    .catch(() => detectAgentsCached().catch(() => {}));
 
   await recoverStaleLiveArtifactRefreshes({ projectsRoot: PROJECTS_DIR }).catch((error) => {
     console.warn('[od] Failed to recover stale live artifact refreshes:', error);

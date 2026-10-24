@@ -30,6 +30,8 @@ od:
 
 Use this skill when the user asks to build or improve a frontend interface: a website, landing page, dashboard, application screen, HTML/CSS artifact, React/Vue/Svelte component, or a visual redesign of an existing UI.
 
+Before making frontend design decisions or writing or changing CSS, read <https://good-css.com/> and consult the entries relevant to the interface. Apply the guidance within the project's browser support, accessibility requirements, and existing design system.
+
 The goal is not just "make it nicer." The goal is to ship working frontend code with a clear design point of view, strong craft, and enough product detail that the result feels designed for the user's actual context.
 
 ## Workflow

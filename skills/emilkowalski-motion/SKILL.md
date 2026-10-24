@@ -31,6 +31,8 @@ od:
 
 Use this skill after a design artifact already exists. The goal is to make the interface feel alive without turning it into a motion demo.
 
+Before implementing web motion with CSS, read <https://good-css.com/> and consult its relevant interaction, motion, and show/hide entries. Check browser support, reduced-motion behavior, and the project's existing design tokens.
+
 ## Workflow
 
 1. Inspect the current HTML, component, or selected page element before adding animation.

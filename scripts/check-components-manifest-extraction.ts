@@ -9,7 +9,11 @@ import {
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
 const designSystemsRoot = path.join(repoRoot, 'design-systems');
-const skippedDesignSystemDirectories = new Set(['_schema']);
+// `_schema` is a schema fixture, not a brand. `bird-site-dev` is a local
+// DESIGN.md + open-design.json system with no compiled token/component
+// fixtures; the manifest and package-quality checks already skip DESIGN.md-only
+// systems, so this extraction check must skip it too.
+const skippedDesignSystemDirectories = new Set(['_schema', 'bird-site-dev']);
 
 type BrandSources = {
   id: string;

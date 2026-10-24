@@ -13,3 +13,5 @@ For a rendering template, follow [`docs/skills-contributing.md`](../docs/skills-
 ## License
 
 Skills in this directory are Apache-2.0 unless their own `LICENSE` says otherwise. [`web-clone/`](web-clone/) is adapted from [Jane-xiaoer/claude-skill-web-clone](https://github.com/Jane-xiaoer/claude-skill-web-clone). The MIT-licensed `guizang-ppt` rendering template lives under [`design-templates/guizang-ppt/`](../design-templates/guizang-ppt/).
+
+The `taste-skill` family — [`taste-skill/`](taste-skill/), [`taste-skill-v1/`](taste-skill-v1/), [`taste-skill-v2-experimental/`](taste-skill-v2-experimental/), `gpt-tasteskill/`, `redesign-skill/`, `image-to-code-skill/`, `imagegen-frontend-web/`, `imagegen-frontend-mobile/`, `minimalist-skill/`, `soft-skill/`, `brutalist-skill/`, `output-skill/`, `stitch-skill/`, and `brandkit/` — is vendored from [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) under the MIT `LICENSE` each folder carries.

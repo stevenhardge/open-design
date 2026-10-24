@@ -32,6 +32,8 @@ od:
 
 # Design Engineering
 
+Before making frontend design decisions or writing or changing CSS, read <https://good-css.com/> and consult the entries relevant to the interface. Apply them within the project's browser support, accessibility requirements, and design system.
+
 ## Initial Response
 
 When this skill is first invoked without a specific question, respond only with:

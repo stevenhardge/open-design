@@ -103,6 +103,7 @@ import {
   sharedCancellableGet,
 } from '../lib/shared-cancellable-get';
 import { workspaceProjectHeaders } from '../state/projects';
+import { peekProjectBootstrap } from '../state/project-bootstrap';
 import {
   appendResourceQuery,
   workspaceIdentityCacheKey,
@@ -2230,6 +2231,18 @@ export async function fetchProjectFiles(
     if (options?.afterChange) {
       invalidateProjectFilesCache(projectId, options.workspaceContext);
     }
+    // An opening project already fetched the file list inside the bootstrap
+    // payload. `fresh`/`afterChange` reads bypass this (they exist to observe
+    // writes), but a plain mount rides the opening read.
+    if (!options?.fresh && !options?.afterChange) {
+      const boot = peekProjectBootstrap(projectId, options?.workspaceContext ?? null);
+      if (boot) {
+        const payload = await boot;
+        if (payload && Array.isArray(payload.files)) {
+          return payload.files as ProjectFile[];
+        }
+      }
+    }
     const cacheKey = projectFilesCacheKey(projectId, options?.workspaceContext);
     const cacheGeneration = projectFilesCacheGenerations.get(cacheKey) ?? 0;
     const get = options?.fresh ? forceSharedCancellableGet : sharedCancellableGet;
@@ -2317,6 +2330,16 @@ export async function fetchProjectFolders(
   projectId: string,
   workspaceContext?: WorkspaceCollabContext | null,
 ): Promise<ProjectFolder[]> {
+  // An opening project already fetched folders inside the bootstrap payload;
+  // ride that read instead of paying a second tunnel round trip. A forced or
+  // post-write read still goes to the daemon.
+  const boot = peekProjectBootstrap(projectId, workspaceContext ?? null);
+  if (boot) {
+    const payload = await boot;
+    if (payload && Array.isArray(payload.folders)) {
+      return payload.folders as ProjectFolder[];
+    }
+  }
   // Keyed by the authority the request is made under as well as the project:
   // two readers may only share a request that carries the same Workspace
   // headers, or one identity's answer could satisfy another's read.
@@ -3607,7 +3630,11 @@ export async function fetchHostEditors(): Promise<
       if (!resp.ok) throw new Error(`GET /api/editors failed: ${resp.status}`);
       return (await resp.json()) as import('@open-design/contracts').HostEditorsResponse;
     },
-    IN_FLIGHT_SHARE_ONLY_MS,
+    // The hand-off button mounts in the viewer chrome on every artifact and
+    // probes PATH for installed editors. That inventory only changes when the
+    // host installs/removes an app, so sharing it for a minute removes a
+    // multi-second probe from every project/file open without visible staleness.
+    60_000,
   );
 }
 

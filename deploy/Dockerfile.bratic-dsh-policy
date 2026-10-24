@@ -1,0 +1,21 @@
+# SUPERSEDED 2026-10-23 — do not use.
+#
+# This layer existed only because the 0.26.1-era source build could not be
+# rebuilt without losing the 2026-10-21 CA remediation: it copied a locally
+# built daemon `dist` into the already-remediated `open-design-local:ca20261021`
+# image.
+#
+# As of the 0.26.1 upgrade the flow is a normal source build again —
+# `deploy/Dockerfile` (which already contains the DSH 0.2.1-rc.2 policy) followed
+# by `deploy/Dockerfile.bratic` (libc6-compat + CA gate). That file's base tag
+# no longer exists on this host.
+#
+# Kept only as history; see the `open-design-ops` runbook for the current flow.
+
+# bratic compat layer (historical): carry only the rebuilt daemon policy into
+# the CA-remediated production image.
+FROM open-design-local:ca20261021
+
+USER root
+COPY --chown=open-design:open-design apps/daemon/dist /app/apps/daemon/dist
+USER open-design

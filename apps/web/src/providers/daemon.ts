@@ -1175,17 +1175,29 @@ export async function fetchChatRunStatus(
   runId: string,
   workspaceContext?: WorkspaceCollabContext | null,
 ): Promise<ChatRunStatusResponse | null> {
-  try {
-    const resp = await fetch(`/api/runs/${encodeURIComponent(runId)}`, {
-      ...(workspaceContext
-        ? { headers: workspaceProjectHeaders(workspaceContext) }
-        : {}),
-    });
-    if (!resp.ok) return null;
-    return (await resp.json()) as ChatRunStatusResponse;
-  } catch {
-    return null;
-  }
+  // Several surfaces hydrate the same run (replay scan, reconnect banner,
+  // message row). Collapse those into one read per burst and retain the
+  // settled answer briefly so a retry loop does not re-pay the round trip.
+  // Scoped by account generation + workspace so an identity switch cannot
+  // reuse another scope's status.
+  const key = `chat-run-status:${currentWorkspaceAccountGeneration()}:${workspaceContext?.workspaceId ?? ''}:${runId}`;
+  return coalescedGet(
+    key,
+    async () => {
+      try {
+        const resp = await fetch(`/api/runs/${encodeURIComponent(runId)}`, {
+          ...(workspaceContext
+            ? { headers: workspaceProjectHeaders(workspaceContext) }
+            : {}),
+        });
+        if (!resp.ok) return null;
+        return (await resp.json()) as ChatRunStatusResponse;
+      } catch {
+        return null;
+      }
+    },
+    1_500,
+  );
 }
 
 // PR #3157: Antigravity's auth banner can offer a one-click "open

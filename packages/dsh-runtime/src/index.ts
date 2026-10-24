@@ -12,7 +12,6 @@ import type {} from '@deepseek-ai/dsh-agent-default-model';
 import {
   createUserMessage,
   ReasoningEffortId,
-  type ContentBlock,
   type TokenUsage,
 } from '@deepseek-ai/dsh-llm';
 import { SessionId, type SessionEvent, type TurnEndReason } from '@deepseek-ai/dsh-session';
@@ -67,12 +66,17 @@ function errorFacts(error: unknown, fallbackCode: string): { code: string; messa
   return { code, message: 'DeepSeek Harness reported an execution error.' };
 }
 
-function contentText(content: readonly ContentBlock[]): string {
+function contentText(content: readonly unknown[]): string {
   const text: string[] = [];
-  const visit = (blocks: readonly ContentBlock[]) => {
-    for (const block of blocks) {
-      if (block.type === 'text' || block.type === 'reasoning') text.push(block.text);
-      if (block.type === 'tool-result') visit(block.content);
+  const visit = (blocks: readonly unknown[]) => {
+    for (const value of blocks) {
+      if (typeof value !== 'object' || value === null) continue;
+      const block = value as { type?: unknown; text?: unknown; content?: unknown };
+      if ((block.type === 'text' || block.type === 'reasoning') && typeof block.text === 'string') {
+        text.push(block.text);
+      }
+      // 0.1.x nests a tool result's own blocks under `content`.
+      if (block.type === 'tool-result' && Array.isArray(block.content)) visit(block.content);
     }
   };
   visit(content);
@@ -205,49 +209,107 @@ async function listModelCatalog(ctx: Context): Promise<ModelCatalogEntry[]> {
   return catalog;
 }
 
+type WireEvent = {
+  type: string;
+  data: {
+    chunk?: { type?: string; text?: string };
+    callId?: unknown;
+    name?: string;
+    arguments?: unknown;
+    error?: { name?: string };
+    message?: { content?: unknown[] };
+    usage?: TokenUsage;
+  };
+};
+
 function emitSessionEvent(
   output: Output,
   request: ExecuteCommand,
   provider: string,
   model: string,
   event: SessionEvent,
-): void {
-  switch (event.type) {
+  includeCompletedMessageText = false,
+): string {
+  // The daemon supports both DeepSeek Harness protocol shapes: 0.1.x streams
+  // `assistant/chunk` plus `tool/result`, while 0.2.x reports a complete
+  // `assistant/message`. This package compiles against the pinned 0.2.x
+  // typings, so the legacy branches read through a widened view instead of
+  // forcing one protocol's types onto the other.
+  const wire = event as unknown as WireEvent;
+  switch (wire.type) {
     case 'assistant/chunk': {
-      const chunk = event.data.chunk;
-      if (chunk.type === 'text-delta' && chunk.text !== '') {
+      const chunk = wire.data.chunk;
+      if (chunk?.type === 'text-delta' && chunk.text) {
         writeFrame(output, { v: 1, type: 'text', request_id: request.request_id, content: chunk.text });
-      } else if (chunk.type === 'reasoning-delta' && chunk.text !== '') {
+      } else if (chunk?.type === 'reasoning-delta' && chunk.text) {
         writeFrame(output, { v: 1, type: 'thinking', request_id: request.request_id, content: chunk.text });
       }
-      return;
+      return '';
     }
     case 'tool/call':
       writeFrame(output, {
         v: 1,
         type: 'tool_call',
         request_id: request.request_id,
-        call_id: String(event.data.callId),
-        name: event.data.name,
-        arguments: event.data.arguments,
+        call_id: String(wire.data.callId),
+        name: wire.data.name,
+        arguments: wire.data.arguments,
       });
-      return;
-    case 'tool/result':
+      return '';
+    case 'tool/result': {
+      const result = (wire.data.message?.content?.[0] ?? {}) as {
+        toolCallId?: unknown;
+        content?: unknown[];
+        isError?: boolean;
+      };
       writeFrame(output, {
         v: 1,
         type: 'tool_result',
         request_id: request.request_id,
-        call_id: String(event.data.message.content[0].toolCallId),
-        name: event.data.error?.name ?? 'tool',
-        output: contentText(event.data.message.content[0].content),
-        is_error: event.data.message.content[0].isError === true,
+        call_id: String(result.toolCallId),
+        name: wire.data.error?.name ?? 'tool',
+        output: contentText(result.content ?? []),
+        is_error: result.isError === true,
       });
-      return;
+      return '';
+    }
     case 'assistant/message':
-      if (event.data.usage) writeFrame(output, usageFrame(request.request_id, provider, model, event.data.usage));
-      return;
+      if (wire.data.usage) writeFrame(output, usageFrame(request.request_id, provider, model, wire.data.usage));
+      // DSH 0.2.x records the complete assistant message (including its
+      // content) rather than emitting the 0.1.x assistant/chunk stream. Use
+      // this only when no text chunks were already delivered, so 0.1.x does
+      // not show the same answer twice.
+      if (!includeCompletedMessageText) return '';
+      {
+        const blocks = Array.isArray(wire.data.message?.content)
+          ? wire.data.message.content
+          : [];
+        let text = '';
+        for (const value of blocks) {
+          if (typeof value !== 'object' || value === null) continue;
+          const block = value as { type?: unknown; text?: unknown };
+          if (typeof block.text !== 'string' || block.text === '') continue;
+          if (block.type === 'text') {
+            text += block.text;
+            writeFrame(output, {
+              v: 1,
+              type: 'text',
+              request_id: request.request_id,
+              content: block.text,
+            });
+          } else if (block.type === 'reasoning') {
+            writeFrame(output, {
+              v: 1,
+              type: 'thinking',
+              request_id: request.request_id,
+              content: block.text,
+            });
+          }
+        }
+        return text;
+      }
     default:
-      return;
+      return '';
   }
 }
 
@@ -277,9 +339,20 @@ async function execute(
   let disposeEvent = () => {};
   const onSessionEvent = (session: { id: unknown }, event: SessionEvent) => {
     if (String(session.id) !== String(sessionId) || event.seq < firstSeq) return;
-    emitSessionEvent(output, request, selection.provider, selection.model, event);
-    if (event.type === 'assistant/chunk' && event.data.chunk.type === 'text-delta') {
-      assistantOutput += event.data.chunk.text;
+    const completedText = emitSessionEvent(
+      output,
+      request,
+      selection.provider,
+      selection.model,
+      event,
+      assistantOutput === '',
+    );
+    assistantOutput += completedText;
+    {
+      const wire = event as unknown as { type: string; data: { chunk?: { type?: string; text?: string } } };
+      if (wire.type === 'assistant/chunk' && wire.data.chunk?.type === 'text-delta') {
+        assistantOutput += wire.data.chunk.text ?? '';
+      }
     }
     if (event.type === 'turn/end') turnEnd = event;
   };

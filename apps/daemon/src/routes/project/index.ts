@@ -2259,7 +2259,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     deleteWorkspaceProject,
     countWorkspaceProjectRefs,
   } = ctx.projectStore;
-  const { writeProjectFile, readProjectFile, ensureProject, listFiles, listTabs, setTabs, resolveProjectDir } = ctx.projectFiles;
+  const { writeProjectFile, readProjectFile, ensureProject, listFiles, listProjectFolders, listTabs, setTabs, resolveProjectDir } = ctx.projectFiles;
   const { insertConversation } = ctx.conversations;
   const { getTemplate, listTemplates, deleteTemplate, insertTemplate, findTemplateByNameAndProject, updateTemplate } = ctx.templates;
   const { listLatestProjectRunStatuses, listProjectsAwaitingInput, normalizeProjectDisplayStatus, composeProjectDisplayStatus, listProjects, listUnboundProjects } = ctx.status;
@@ -5110,6 +5110,33 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     }
   });
 
+  // Shared by `GET /workspace-scope` and the project bootstrap endpoint so the
+  // two cannot drift on how a member's workspace scope is resolved/learned.
+  const projectWorkspaceScopeForRequest = (req: any, project: any) => {
+    const binding = getWorkspaceProjectByProjectId(db, project.id);
+    const claimed = workspaceProjectContextFromRequest(req);
+    const assertedType = headerValue(req, 'x-od-workspace-type');
+    const requestWorkspaceType = assertedType === 'team' || assertedType === 'personal'
+      ? assertedType
+      : null;
+    if (binding?.workspaceId && requestWorkspaceType) {
+      workspaceTypes?.learn({
+        workspaceId: binding.workspaceId,
+        workspaceType: requestWorkspaceType,
+      });
+    }
+    const scope = resolveLocalProjectWorkspaceScope({
+      projectId: project.id,
+      binding,
+      requestWorkspaceMemberId:
+        claimed && claimed !== 'missing' ? claimed.workspaceMemberId : null,
+      requestWorkspaceType,
+      knownWorkspaceType: workspaceTypes?.typeOf(binding?.workspaceId) ?? null,
+      ...(ctx.configuredEnv ? { configuredEnv: ctx.configuredEnv() } : {}),
+    });
+    return { scope, binding };
+  };
+
   app.get('/api/projects/:id', async (req, res) => {
     const project = getProject(db, req.params.id);
     const locations = await configuredProjectLocations();
@@ -5153,31 +5180,55 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     if (!project || !projectVisibleForLocations(project, locations)) {
       return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'not found');
     }
-    const binding = getWorkspaceProjectByProjectId(db, project.id);
     if (!await authorizeProjectRequest(req, res, project.id, { mode: 'read' })) return;
-    const claimed = workspaceProjectContextFromRequest(req);
-    const assertedType = headerValue(req, 'x-od-workspace-type');
-    const requestWorkspaceType = assertedType === 'team' || assertedType === 'personal'
-      ? assertedType
-      : null;
-    if (binding?.workspaceId && requestWorkspaceType) {
-      workspaceTypes?.learn({
-        workspaceId: binding.workspaceId,
-        workspaceType: requestWorkspaceType,
-      });
-    }
-    const scope = resolveLocalProjectWorkspaceScope({
-      projectId: project.id,
-      binding,
-      requestWorkspaceMemberId:
-        claimed && claimed !== 'missing' ? claimed.workspaceMemberId : null,
-      requestWorkspaceType,
-      knownWorkspaceType: workspaceTypes?.typeOf(binding?.workspaceId) ?? null,
-      ...(ctx.configuredEnv ? { configuredEnv: ctx.configuredEnv() } : {}),
-    });
+    const { scope } = projectWorkspaceScopeForRequest(req, project);
     /** @type {import('@open-design/contracts').ProjectWorkspaceScopeResponse} */
     const body = { scope };
     res.json(body);
+  });
+
+  // One authenticated read for opening a project. The web shell used to fan out
+  // to /projects/:id, /workspace-scope, /files, /folders and /tabs; through the
+  // Cloudflare tunnel each of those pays a ~250-300ms round trip even when the
+  // daemon answers in single-digit milliseconds. This endpoint returns the same
+  // slices behind one authority check so a project open costs one hop.
+  app.get('/api/projects/:id/bootstrap', async (req, res) => {
+    try {
+      const project = getProject(db, req.params.id);
+      const locations = await configuredProjectLocations();
+      if (!project || !projectVisibleForLocations(project, locations)) {
+        return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'not found');
+      }
+      if (!await authorizeProjectRequest(req, res, project.id, { mode: 'read' })) return;
+      if (project.metadata?.teamMirrorRevokedAt) {
+        return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'not found');
+      }
+      const { scope, binding } = projectWorkspaceScopeForRequest(req, project);
+      const resolvedDir = projectDetailResolvedDir(PROJECTS_DIR, project, resolveProjectDir);
+      const [files, folders] = await Promise.all([
+        listFiles(PROJECTS_DIR, project.id, { metadata: project.metadata }),
+        listProjectFolders(PROJECTS_DIR, project.id, { metadata: project.metadata }),
+      ]);
+      // The directory is mutated outside HTTP by agent CLIs; transport caches
+      // must revalidate the same way `/files` requires.
+      res.setHeader('Cache-Control', 'no-store');
+      res.json({
+        project: {
+          ...project,
+          workspaceId:
+            typeof binding?.workspaceId === 'string' && binding.workspaceId.trim()
+              ? binding.workspaceId.trim()
+              : null,
+        },
+        resolvedDir,
+        scope,
+        files,
+        folders,
+        tabs: listTabs(db, project.id),
+      });
+    } catch (err: any) {
+      sendApiError(res, 400, 'BAD_REQUEST', String(err?.message || err));
+    }
   });
 
   app.patch('/api/projects/:id', async (req, res) => {
@@ -6201,12 +6252,32 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
   // the file's size+mtime, so any agent rewrite changes them and busts the cache
   // immediately; `no-cache` means "always revalidate" (never serve stale without
   // asking), so a 304 only happens when the bytes are genuinely unchanged.
-  function setRawRevalidationHeaders(res: Response, meta: { size: number; mtime: number }): string {
+  // The web app stamps versioned preview URLs with the file mtime (`?v=<mtime>`).
+  // When the caller's version still matches the bytes on disk, the URL is
+  // immutable: a rewrite changes the mtime and the client requests a new `v`.
+  function rawVersionMatches(req: any, mtime: number): boolean {
+    const rawVersion = req?.query?.v;
+    const clientVersion = typeof rawVersion === 'string' ? Number(rawVersion) : NaN;
+    return Number.isFinite(clientVersion) && Math.abs(clientVersion - mtime) < 1;
+  }
+
+  function setRawRevalidationHeaders(
+    req: any,
+    res: Response,
+    meta: { size: number; mtime: number },
+  ): string {
     const mtime = Math.floor(meta.mtime);
     const etag = `W/"${meta.size.toString(16)}-${mtime.toString(16)}"`;
     res.setHeader('ETag', etag);
     res.setHeader('Last-Modified', new Date(mtime).toUTCString());
-    res.setHeader('Cache-Control', 'no-cache');
+    // Through Cloudflare each revalidation is a full round trip (~0.4 s), so a
+    // versioned URL that still matches disk can be cached for good.
+    res.setHeader(
+      'Cache-Control',
+      rawVersionMatches(req, meta.mtime)
+        ? 'private, max-age=31536000, immutable'
+        : 'no-cache',
+    );
     return etag;
   }
 
@@ -6339,7 +6410,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
 
     let currentEtag: string | null = null;
     if (revalidate && !willSubstitute) {
-      currentEtag = setRawRevalidationHeaders(res, meta);
+      currentEtag = setRawRevalidationHeaders(req, res, meta);
       if (rawRequestIsFresh(req, currentEtag, meta.mtime)) {
         return res.status(304).end();
       }
@@ -6403,7 +6474,17 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       const buf = Buffer.isBuffer(body) ? body : Buffer.from(String(body));
       const etag = `W/"${createHash('sha1').update(buf).digest('hex').slice(0, 16)}"`;
       res.setHeader('ETag', etag);
-      res.setHeader('Cache-Control', 'no-cache');
+      // HTML previews are rewritten (preview bridge), so their mtime is not a
+      // validator for the sent bytes — but the ETag above hashes those bytes.
+      // A versioned URL may therefore be cached briefly: repeat opens inside
+      // the window skip the Cloudflare round trip, and a bridge/app upgrade
+      // self-heals within the max-age because the URL still carries `?v`.
+      res.setHeader(
+        'Cache-Control',
+        rawVersionMatches(req, meta.mtime)
+          ? 'private, max-age=300, stale-while-revalidate=600'
+          : 'no-cache',
+      );
       res.setHeader('Last-Modified', new Date(Math.floor(meta.mtime)).toUTCString());
       const ifNoneMatch = req.headers['if-none-match'];
       if (typeof ifNoneMatch === 'string' && ifNoneMatch.split(',').some((tag) => tag.trim() === etag)) {

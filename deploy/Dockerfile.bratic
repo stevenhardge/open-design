@@ -1,0 +1,21 @@
+# bratic compat + CA gate layer.
+# Extends the locally built open-design:custom image (0.26.1 source plus the
+# local deltas: ai-design-craft / taste-skill, the DSH 0.2.1-rc.2 policy, and
+# the Project Instructions web patch).
+#
+# libc6-compat lets glibc-linked host agent CLIs (codex, opencode, ...) run on
+# Alpine musl.
+FROM open-design:custom
+
+USER root
+RUN apk add --no-cache libc6-compat
+
+# CA remediation (2026-10-21 emergency: eMudhra emSign intermediate key
+# compromise). The daemon must not trust "emSign ECC Root CA - G3".
+# ca-certificates-bundle >= 20261020 already excludes it; this assertion makes
+# a future base bump fail the build instead of silently re-trusting it.
+# The daemon/Node side reads this store because docker-compose.bratic.yml sets
+# NODE_OPTIONS=--use-openssl-ca (Node otherwise uses its own bundled roots).
+RUN node -e 'const fs=require("fs"),{X509Certificate}=require("crypto");const t=fs.readFileSync("/etc/ssl/certs/ca-certificates.crt","utf8");const c=t.match(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/g)||[];const bad=c.filter(x=>/CN=emSign ECC Root CA - G3/.test(new X509Certificate(x).subject));console.log("ca roots:",c.length,"g3:",bad.length);if(bad.length){process.exit(1)}'
+
+USER open-design

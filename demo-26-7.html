@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unanet AE 26.7 — Mid-Quarter Product Demo</title>
+<style>
+:root {
+  --ivory:    #FAF9F5;
+  --slate:    #141413;
+  --clay:     #D97757;
+  --oat:      #E3DACC;
+  --olive:    #788C5D;
+  --rust:     #B04A3F;
+  --gray-150: #F0EEE6;
+  --gray-300: #D1CFC5;
+  --gray-500: #87867F;
+  --gray-700: #3D3D3A;
+  --blue:     #4A7AB5;
+  --purple:   #7B6BA5;
+  --serif:    ui-serif, Georgia, "Times New Roman", serif;
+  --sans:     system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:     ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--ivory);
+  color: var(--slate);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Layout --- */
+.page {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+nav {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 2rem 1.25rem;
+  border-right: 1.5px solid var(--gray-300);
+  background: var(--gray-150);
+}
+
+nav .nav-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin: 1.5rem 0 0.5rem;
+}
+nav .nav-label:first-child { margin-top: 0; }
+
+nav a {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--gray-700);
+  text-decoration: none;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  transition: background 0.15s;
+}
+nav a:hover { background: var(--oat); }
+nav a.team-ds { border-left: 3px solid var(--clay); padding-left: calc(0.5rem - 3px); }
+nav a.team-ss { border-left: 3px solid var(--blue); padding-left: calc(0.5rem - 3px); }
+nav a.team-all { border-left: 3px solid var(--olive); padding-left: calc(0.5rem - 3px); }
+
+main {
+  max-width: 860px;
+  padding: 3rem 3rem 6rem;
+}
+
+/* --- Typography --- */
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin-bottom: 0.5rem;
+}
+h1 {
+  font-family: var(--serif);
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 0.5rem;
+}
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--gray-700);
+  max-width: 600px;
+  margin-bottom: 2rem;
+}
+h2 {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 3.5rem 0 0.75rem;
+  padding-top: 2rem;
+  border-top: 1.5px solid var(--gray-300);
+}
+h2:first-of-type { border-top: none; padding-top: 0; }
+h3 {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 2rem 0 0.5rem;
+}
+
+/* --- Team badges --- */
+.badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+}
+.badge-ds { background: #F8EDE8; color: var(--clay); border: 1.5px solid var(--clay); }
+.badge-ss { background: #E8EFF8; color: var(--blue); border: 1.5px solid var(--blue); }
+.badge-all { background: #ECF2E6; color: var(--olive); border: 1.5px solid var(--olive); }
+
+/* --- Hero stat row --- */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 2rem 0 3rem;
+}
+.stat-card {
+  background: white;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 8px;
+  padding: 1.25rem;
+  text-align: center;
+}
+.stat-card .number {
+  font-family: var(--serif);
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.stat-card .label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin-top: 0.4rem;
+}
+.stat-card.accent .number { color: var(--clay); }
+.stat-card.olive .number { color: var(--olive); }
+.stat-card.blue .number { color: var(--blue); }
+
+/* --- Feature cards --- */
+.feature-card {
+  background: white;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 8px;
+  padding: 1.75rem;
+  margin: 1.25rem 0;
+}
+.feature-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+.feature-card .what {
+  color: var(--gray-700);
+  margin-bottom: 1rem;
+}
+
+/* Talking points */
+.talking-points {
+  background: var(--gray-150);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin-top: 0.75rem;
+}
+.talking-points .tp-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin-bottom: 0.5rem;
+}
+.talking-points ul {
+  list-style: none;
+  padding: 0;
+}
+.talking-points li {
+  position: relative;
+  padding-left: 1.25rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+}
+.talking-points li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--clay);
+  font-weight: 600;
+}
+
+/* Demo steps */
+.demo-steps {
+  counter-reset: step;
+  margin: 0.75rem 0;
+  padding: 0;
+  list-style: none;
+}
+.demo-steps li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 2.5rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.9rem;
+}
+.demo-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  background: var(--oat);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 50%;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Collapsibles --- */
+details {
+  margin: 0.5rem 0;
+}
+details summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gray-700);
+  padding: 0.4rem 0;
+  list-style: none;
+}
+details summary::before {
+  content: "▸ ";
+  color: var(--gray-500);
+  font-family: var(--mono);
+}
+details[open] summary::before { content: "▾ "; }
+details .detail-body {
+  padding: 0.5rem 0 0.5rem 1rem;
+  border-left: 1.5px solid var(--gray-300);
+  margin-left: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--gray-700);
+}
+
+/* --- Bug / reliability section --- */
+.bug-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+.bug-card {
+  background: white;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+.bug-card .severity {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+.sev-critical { background: #FCEAE8; color: var(--rust); border: 1px solid var(--rust); }
+.sev-high { background: #FDF3EB; color: #C06A30; border: 1px solid #C06A30; }
+.sev-security { background: #F5EBF8; color: #8B5CA0; border: 1px solid #8B5CA0; }
+.bug-card h4 {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+.bug-card p {
+  font-size: 0.82rem;
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+.bug-card .ticket {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--gray-500);
+  margin-top: 0.5rem;
+}
+
+/* --- Performance bar --- */
+.perf-items {
+  margin: 1.25rem 0;
+}
+.perf-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--gray-300);
+  font-size: 0.9rem;
+}
+.perf-item:last-child { border-bottom: none; }
+.perf-item .perf-label { font-weight: 500; }
+.perf-item .perf-ticket {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--gray-500);
+}
+.perf-impact {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--olive);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* --- Handoff callout --- */
+.callout {
+  border: 1.5px solid var(--oat);
+  background: #FBF8F3;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+}
+.callout .callout-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--clay);
+  margin-bottom: 0.4rem;
+}
+.callout p {
+  font-size: 0.9rem;
+  color: var(--gray-700);
+}
+
+/* --- Agenda timeline --- */
+.agenda {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.4rem 1rem;
+  align-items: center;
+  margin: 1.5rem 0 2rem;
+  font-size: 0.9rem;
+}
+.agenda .time {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  text-align: right;
+  min-width: 3.5rem;
+}
+.agenda .item { font-weight: 500; }
+.agenda .team-tag {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.agenda .team-tag.ds { color: var(--clay); }
+.agenda .team-tag.ss { color: var(--blue); }
+.agenda .team-tag.shared { color: var(--olive); }
+.agenda .divider {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: var(--gray-300);
+  margin: 0.25rem 0;
+}
+
+/* --- Progress indicator --- */
+.progress-track {
+  background: var(--gray-300);
+  border-radius: 4px;
+  height: 6px;
+  margin: 0.5rem 0;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--olive);
+}
+.progress-fill.partial { background: var(--clay); }
+
+.progress-note {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--gray-500);
+  margin-top: 0.25rem;
+}
+
+/* --- Responsive --- */
+@media (max-width: 800px) {
+  .page { grid-template-columns: 1fr; }
+  nav {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1.5px solid var(--gray-300);
+    padding: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  nav .nav-label { width: 100%; margin-top: 0.75rem; }
+  main { padding: 2rem 1.5rem; }
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .bug-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav>
+  <div class="nav-label">Overview</div>
+  <a href="#top">Release at a Glance</a>
+  <a href="#agenda">Demo Agenda</a>
+
+  <div class="nav-label">Dragonstone</div>
+  <a href="#doc-merge" class="team-ds">Doc Merge + Linking</a>
+  <a href="#org-security" class="team-ds">Org Security Config</a>
+  <a href="#org-access" class="team-ds">Org Access Groups</a>
+
+  <div class="nav-label">Seasmoke</div>
+  <a href="#line-preview" class="team-ss">Line Level Docs Preview</a>
+  <a href="#rev-rec" class="team-ss">Rev Rec Formula Builder</a>
+  <a href="#bill-review-ux" class="team-ss">Bill Review UX</a>
+
+  <div class="nav-label">Cross-Team</div>
+  <a href="#reliability" class="team-all">Reliability &amp; Trust</a>
+  <a href="#performance" class="team-all">Performance</a>
+  <a href="#whats-next" class="team-all">What's Next</a>
+</nav>
+
+<main>
+  <header id="top">
+    <div class="eyebrow">Mid-Quarter Product Demo</div>
+    <h1>Unanet AE 26.7</h1>
+    <p class="subtitle">New security administration, revenue recognition formulas, invoice document merging, and 30 bug fixes across desktop and web.</p>
+  </header>
+
+  <div class="stat-row">
+    <div class="stat-card accent">
+      <div class="number">139</div>
+      <div class="label">Issues shipped</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="number">6</div>
+      <div class="label">Major features</div>
+    </div>
+    <div class="stat-card olive">
+      <div class="number">30</div>
+      <div class="label">Bugs fixed</div>
+    </div>
+    <div class="stat-card">
+      <div class="number">12</div>
+      <div class="label">Critical resolved</div>
+    </div>
+  </div>
+
+  <!-- ============ AGENDA ============ -->
+  <h2 id="agenda">Demo Agenda</h2>
+
+  <div class="agenda">
+    <span class="time">0:00</span>
+    <span class="item">Opening &amp; release stats</span>
+    <span class="team-tag shared">All</span>
+
+    <div class="divider"></div>
+
+    <span class="time">2:00</span>
+    <span class="item">Line Level Doc Merge + Linking</span>
+    <span class="team-tag ds">Dragonstone</span>
+
+    <span class="time">6:00</span>
+    <span class="item">Org Security Config</span>
+    <span class="team-tag ds">Dragonstone</span>
+
+    <span class="time">9:00</span>
+    <span class="item">Org Access Groups (progress)</span>
+    <span class="team-tag ds">Dragonstone</span>
+
+    <div class="divider"></div>
+
+    <span class="time">11:00</span>
+    <span class="item">Line Level Docs Preview in Bill Review</span>
+    <span class="team-tag ss">Seasmoke</span>
+
+    <span class="time">13:00</span>
+    <span class="item">Rev Rec Formula Builder</span>
+    <span class="team-tag ss">Seasmoke</span>
+
+    <span class="time">18:00</span>
+    <span class="item">Bill Review UX Improvements</span>
+    <span class="team-tag ss">Seasmoke</span>
+
+    <div class="divider"></div>
+
+    <span class="time">20:00</span>
+    <span class="item">Reliability, Security &amp; Performance</span>
+    <span class="team-tag shared">All</span>
+
+    <span class="time">23:00</span>
+    <span class="item">Q&amp;A</span>
+    <span class="team-tag shared">All</span>
+  </div>
+
+  <div class="callout">
+    <div class="callout-label">Cross-team handshake</div>
+    <p>Dragonstone ships doc merging into invoices. Seasmoke ships doc previewing inside Bill Review. The demo flows naturally when Dragonstone attaches docs and Seasmoke shows them surfaced in the review workflow.</p>
+  </div>
+
+  <!-- ============ DRAGONSTONE ============ -->
+  <h2 id="doc-merge">Line Level Doc Merge + Linking <span class="badge badge-ds">Dragonstone</span></h2>
+
+  <div class="feature-card">
+    <h3>Invoice Document Merging</h3>
+    <p class="what">Supporting documents — receipts, PO confirmations, subcontractor invoices — can now be attached at the line level on timesheets, purchase journals, disbursement journals, and expense reports, then merged into the final invoice PDF output in Web Reports.</p>
+
+    <ol class="demo-steps">
+      <li>Open a Purchase Journal and attach a vendor receipt to a line item</li>
+      <li>Navigate to PM Bill Review — show the doc merge preview on the invoice</li>
+      <li>Generate the invoice PDF in Web Reports — merged document appears inline</li>
+      <li>Show the same flow for a Disbursement Journal with a subcontractor invoice attached</li>
+    </ol>
+
+    <div class="talking-points">
+      <div class="tp-label">Talking points</div>
+      <ul>
+        <li>Eliminates manual PDF assembly — clients were stitching invoices in Acrobat</li>
+        <li>Works across all four journal types: timesheets, PJ, DJ, expense reports</li>
+        <li>Preview available directly inside PM Bill Review before generating the final invoice</li>
+        <li>Generic dialog pattern reused for expense line item docs (consistent UX)</li>
+      </ul>
+    </div>
+
+    <details>
+      <summary>Stories shipped (9)</summary>
+      <div class="detail-body">
+        IFC-1685 Implement Invoice PDF Merge in Web Reports · IFC-1801 QA Only · IFC-1820 Line-level Docs: PJ · IFC-1821 Line-level Docs: DJ · IFC-1822 Line-level Docs: Timesheets · IFC-1833 DB work [No-QA] · IFC-1877 Generic Dialog + Regression Test · IFC-1868 Doc merge preview in PM Bill Review · IFC-1940 Fix: Merge Documents not working for DJ
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ ORG SECURITY ============ -->
+  <h2 id="org-security">Org Security Config <span class="badge badge-ds">Dragonstone</span></h2>
+
+  <div class="feature-card">
+    <h3>Web-Native Org Security Configuration</h3>
+    <p class="what">The legacy desktop-only Org Security Config dialog has been replaced with a web-native panel. Administrators can now configure organizational security settings — policy modes, opt-in flags, and org unit access — directly in the web application without launching the desktop client.</p>
+
+    <ol class="demo-steps">
+      <li>Open the new Org Security Config panel from web administration</li>
+      <li>Show the opt-in flag controls (database-backed, replacing PolicyMode)</li>
+      <li>Demonstrate the migration from legacy PolicyMode to the new checkbox model</li>
+      <li>Show the resized, streamlined layout (no header/close chrome)</li>
+    </ol>
+
+    <div class="talking-points">
+      <div class="tp-label">Talking points</div>
+      <ul>
+        <li>Desktop-to-web migration: removes a reason admins need the desktop client</li>
+        <li>Migration script handles PolicyMode → checkbox conversion automatically</li>
+        <li>Database flags for opt-ins give us a clean foundation for future security features</li>
+        <li>Trial Balance Report now uses the original Org Selector — a common support request resolved</li>
+      </ul>
+    </div>
+
+    <details>
+      <summary>Stories shipped (7)</summary>
+      <div class="detail-body">
+        IFC-1850 Trial Balance Report Org Selector · IFC-1897 Database Flag for Opt-Ins · IFC-1899 Migration script · IFC-1908 [LAYOUT] Web Org Security Config · IFC-1914 Swap Desktop View · IFC-1946 Resize + Remove Header · IFC-1902 Fix: Demo login blocking
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ ORG ACCESS GROUPS ============ -->
+  <h2 id="org-access">Org Access Groups <span class="badge badge-ds">Dragonstone</span></h2>
+
+  <div class="feature-card">
+    <h3>New Org Access Groups Applet</h3>
+    <p class="what">A new administration surface for managing organizational access groups — who can see what across org units. The list view, permissions layer, flat table calculation engine, and web presentation are all shipped. Migration tooling is in progress.</p>
+
+    <div class="progress-track">
+      <div class="progress-fill partial" style="width: 75%"></div>
+    </div>
+    <div class="progress-note">~75% complete — list view, permissions, DB, and web view done. Migration + remaining integration in progress.</div>
+
+    <ol class="demo-steps">
+      <li>Open Org Access Groups from administration</li>
+      <li>Show the list view with existing groups</li>
+      <li>Demonstrate the permissions model — how access is scoped</li>
+      <li>Note: migration and full integration coming in the next cycle</li>
+    </ol>
+
+    <div class="talking-points">
+      <div class="tp-label">Talking points</div>
+      <ul>
+        <li>Foundation for granular org-level access control — a top customer request</li>
+        <li>Platform flat table calculation engine enables fast access resolution at scale</li>
+        <li>6 critical-priority stories shipped this cycle — significant investment</li>
+        <li>Frame as "progress update" — the full feature lands next quarter</li>
+      </ul>
+    </div>
+
+    <details>
+      <summary>Stories shipped (5)</summary>
+      <div class="detail-body">
+        IFC-1883 List [UI and Integration] · IFC-1904 DB Work [No-QA] · IFC-1923 Platform Flat Table Calculation · IFC-1930 Applet, Permissions [Migration] · IFC-1931 Show Web View
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ SEASMOKE ============ -->
+  <h2 id="line-preview">Line Level Docs Preview <span class="badge badge-ss">Seasmoke</span></h2>
+
+  <div class="feature-card">
+    <h3>Supporting Documents in Bill Review</h3>
+    <p class="what">Bill Review now surfaces attached line-level documents inline — for expenses, timesheets, purchase journals, and disbursements. Reviewers see the supporting receipt or invoice without leaving the review workflow.</p>
+
+    <ol class="demo-steps">
+      <li>Open Bill Review for a project with line-level docs attached (use the same project from Dragonstone's demo)</li>
+      <li>Expand an expense line — show the attached receipt preview</li>
+      <li>Show the same for a timesheet entry and a purchase journal line</li>
+      <li>Show disbursement journal docs</li>
+    </ol>
+
+    <div class="callout">
+      <div class="callout-label">Cross-team moment</div>
+      <p>"Dragonstone just showed you how docs get attached. Here's where reviewers see them — right inside Bill Review, no clicking out to another screen."</p>
+    </div>
+
+    <div class="talking-points">
+      <div class="tp-label">Talking points</div>
+      <ul>
+        <li>Completes the attach → review → invoice cycle end-to-end</li>
+        <li>Covers all four transaction types: expenses, timesheets, PJ, DJ</li>
+        <li>Reduces context-switching during the bill review process</li>
+      </ul>
+    </div>
+
+    <details>
+      <summary>Stories shipped (4)</summary>
+      <div class="detail-body">
+        IFW-5478 Show Line level docs — Expense/ER · IFW-5841 Timesheets · IFW-5842 Purchase Journal · IFW-5843 Disbursements
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ REV REC ============ -->
+  <h2 id="rev-rec">Rev Rec Formula Builder <span class="badge badge-ss">Seasmoke</span></h2>
+
+  <div class="feature-card">
+    <h3>Custom Percent Complete Formulas</h3>
+    <p class="what">The biggest single feature in 26.7. Users can now define custom percent-complete formulas for revenue recognition — with a full builder UI, variable glossary, async calculation engine, and integration into Bill Review and Project Data.</p>
+
+    <ol class="demo-steps">
+      <li>Open the Formula Builder — show the list of existing formulas</li>
+      <li>Create a new formula: pick variables from the Glossary tab, compose the expression</li>
+      <li>Show the Info Detail panel — formula metadata and validation</li>
+      <li>Assign the formula to a project via Project Data settings</li>
+      <li>Run "Update Percent Complete" from Bill Review — show the progress indicator</li>
+      <li>View the calculated results on the project</li>
+    </ol>
+
+    <div class="talking-points">
+      <div class="tp-label">Talking points</div>
+      <ul>
+        <li>Replaces rigid built-in formulas with user-defined calculations</li>
+        <li>Full CRUD: create, view, edit, delete formulas</li>
+        <li>Async calculation engine handles large project portfolios without blocking the UI</li>
+        <li>WBS-level metrics calculation — granular percent complete at the work breakdown level</li>
+        <li>Onboarding wizard guides new customers through base code configuration</li>
+        <li>Includes guard rails: duplicate request prevention, zero-cap handling, sub-contractor value corrections</li>
+      </ul>
+    </div>
+
+    <details>
+      <summary>Stories shipped (30+)</summary>
+      <div class="detail-body">
+        <strong>UI:</strong> IFW-5729 Onboarding Wizard · IFW-5763 Create Formula · IFW-5766 Glossary Tab · IFW-5767 Info Detail Panel · IFW-5768 View Formulas · IFW-5775 Delete Formulas · IFW-5829 Edit Formulas · IFW-5797 Project Data + Rev Rec Settings · IFW-5811 Progress Indicator · IFW-5780 Save formula to DB from dialog · IFW-5935 Dialog text updates<br><br>
+        <strong>Platform:</strong> IFW-5770–5773 Formula CRUD endpoints · IFW-5778 Lists endpoint · IFW-5790 Variables endpoint · IFW-5791 Variable GET · IFW-5813 Async calculations · IFW-5863 Maintenance job · IFW-5864 WBS metrics · IFW-5865–5867 Results/status/cancel endpoints · IFW-5897 ApplyPercentComplete update · IFW-5899 Benchmark vs Mesa<br><br>
+        <strong>Database:</strong> IFW-5726 ProjectFacts column · IFW-5777 RevRecPCFormulas · IFW-5839 RevRecPCVariables · IFW-5815 PlatformProjectCalculation tables · IFW-5869 Migration<br><br>
+        <strong>Bugs fixed:</strong> IFW-5906 TS transactions in posting · IFW-5916 Zero cap handling · IFW-5918 Sub-contractor values · IFW-5924 Duplicate request prevention · IFW-5890 LaunchDarkly init
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ BILL REVIEW UX ============ -->
+  <h2 id="bill-review-ux">Bill Review UX Improvements <span class="badge badge-ss">Seasmoke</span></h2>
+
+  <div class="feature-card">
+    <h3>Layout, Navigation &amp; Data Visibility</h3>
+    <p class="what">A collection of UX improvements that make Bill Review faster to navigate and richer in context — without changing the core workflow.</p>
+
+    <ol class="demo-steps">
+      <li>Show the new horizontal splitter on the project detail pane — drag to resize</li>
+      <li>Show rows colored by bill review status in the Project Side Viewer</li>
+      <li>Demonstrate As-of-Date filter on project side views</li>
+      <li>Show WBS Level column in the transaction grid</li>
+      <li>Toggle write-off transaction visibility from settings</li>
+    </ol>
+
+    <div class="talking-points">
+      <div class="tp-label">Talking points</div>
+      <ul>
+        <li>Horizontal splitter: users control how much screen real estate goes to the detail pane vs. project list</li>
+        <li>Color-coded rows: instant visual scan of what's approved, pending, or flagged</li>
+        <li>As-of-Date: lets reviewers see the state of billing at any historical point</li>
+        <li>Write-off visibility: configurable per-user — power users see everything, occasional users get a cleaner view</li>
+      </ul>
+    </div>
+
+    <details>
+      <summary>Stories shipped (7)</summary>
+      <div class="detail-body">
+        IFW-5331 As of Date in Filters · IFW-5389 Invoice Billing Adjustments — Expenses · IFW-5565 Horizontal splitter · IFW-5667 Help Template Cut Off fix · IFW-5695 WBS Level · IFW-5696 Write-offs visibility · IFW-5697 Color rows by status
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ RELIABILITY ============ -->
+  <h2 id="reliability">Reliability &amp; Trust <span class="badge badge-all">Cross-Team</span></h2>
+
+  <p style="color: var(--gray-700); margin-bottom: 1rem;">Beyond features, 26.7 ships 30 bug fixes — including critical security, data correctness, and customer-escalated issues.</p>
+
+  <div class="bug-grid">
+    <div class="bug-card">
+      <span class="severity sev-security">Security</span>
+      <h4>SQL Injection on Project Central Search</h4>
+      <p>Closed a SQL injection vulnerability in the Project Central search endpoint. Input is now parameterized and validated.</p>
+      <div class="ticket">IFC-1649 · Critical</div>
+    </div>
+
+    <div class="bug-card">
+      <span class="severity sev-critical">Critical</span>
+      <h4>A/P Invoice Automation Not Loading</h4>
+      <p>The entire A/P Invoice Automation module was failing to load in the web app. Root cause identified and resolved.</p>
+      <div class="ticket">IFW-5855 · Critical</div>
+    </div>
+
+    <div class="bug-card">
+      <span class="severity sev-critical">Critical</span>
+      <h4>Disbursement Journal Doc Merge Broken</h4>
+      <p>Document merging was silently failing for Disbursement Journals — invoices generated without attached supporting docs.</p>
+      <div class="ticket">IFC-1940 · Critical</div>
+    </div>
+
+    <div class="bug-card">
+      <span class="severity sev-high">High</span>
+      <h4>Unit Bill Transactions — Missing Amounts</h4>
+      <p>Row amounts were not displaying on the Bill Review transaction grid for Unit Bill transactions, forcing manual cross-reference.</p>
+      <div class="ticket">IFW-5715 · High</div>
+    </div>
+
+    <div class="bug-card">
+      <span class="severity sev-high">High</span>
+      <h4>Timesheet Adjustments — Error on Open</h4>
+      <p>Users hit an error message when opening any timesheet adjustment entry, blocking corrections entirely.</p>
+      <div class="ticket">IFC-1939 · High</div>
+    </div>
+
+    <div class="bug-card">
+      <span class="severity sev-high">High</span>
+      <h4>Expense Code Sort Order Changed</h4>
+      <p>The 26.4 update inadvertently changed the display sort order of expense codes on web — restored to expected order.</p>
+      <div class="ticket">IFW-5903 · High</div>
+    </div>
+
+    <div class="bug-card">
+      <span class="severity sev-high">High</span>
+      <h4>Invoice Preview "No Preview Available"</h4>
+      <p>PDF attachments in AP Invoice Approver intermittently showed "No preview available" — affecting both web and desktop.</p>
+      <div class="ticket">IFW-5898 · High · Moseley escalation</div>
+    </div>
+
+    <div class="bug-card">
+      <span class="severity sev-high">High</span>
+      <h4>PJ Status &amp; Assignee Not Set</h4>
+      <p>Purchase Journals were not updating status or setting assignee on workflow transitions — breaking approval routing.</p>
+      <div class="ticket">IFC-1900 · High</div>
+    </div>
+  </div>
+
+  <details>
+    <summary>All other bugs fixed (22)</summary>
+    <div class="detail-body">
+      IFC-601 Name appears on all timesheets · IFC-1157 Merge Contacts typo · IFC-1349 Copy in PJ ignores validation · IFC-1658 Approve timesheets with View Only · IFC-1734 Missing checkboxes · IFC-1876 Sandbox info link incorrect · IFC-1889 Layout Manager relogin required · IFC-1902 Org Security blocks demo logins · IFC-1906 UDF Gridgets don't refresh · IFC-1926 Error 500 on timesheets · IFC-1888 Bank Reconciliation timing · IFC-1890 Report dropdowns cut off · IFC-1891 Blue line vs. arrow in grids · IFC-1963 Help text cut off · IFW-5667 Help template cut off · IFW-5675 "Value Cannot be null" in PM Bill Review · IFW-5711 Revenue Manager post error · IFW-5728 Decimal inconsistency · IFW-5792 Unit Billing broken on move · IFW-5828 Percent complete chart absent · IFW-5853 apinvscan GL account endpoint · IFW-5936 Payment portal company list
+    </div>
+  </details>
+
+  <!-- ============ PERFORMANCE ============ -->
+  <h2 id="performance">Performance &amp; Platform <span class="badge badge-all">Cross-Team</span></h2>
+
+  <div class="perf-items">
+    <div class="perf-item">
+      <div>
+        <div class="perf-label">LaborRates Recalculation Optimization</div>
+        <div class="perf-ticket">IFC-1587</div>
+      </div>
+      <div class="perf-impact">Faster recalc</div>
+    </div>
+    <div class="perf-item">
+      <div>
+        <div class="perf-label">ProjectPlan RecalcRates Optimization</div>
+        <div class="perf-ticket">IFC-1867</div>
+      </div>
+      <div class="perf-impact">Faster recalc</div>
+    </div>
+    <div class="perf-item">
+      <div>
+        <div class="perf-label">KLJ AR Automation — Reduced GL Account Initial Load</div>
+        <div class="perf-ticket">IFC-1943 · Critical</div>
+      </div>
+      <div class="perf-impact">Unblocked customer</div>
+    </div>
+    <div class="perf-item">
+      <div>
+        <div class="perf-label">Deprecated Package Replacement for Modern Browsers</div>
+        <div class="perf-ticket">IFW-5568</div>
+      </div>
+      <div class="perf-impact">Smaller bundles</div>
+    </div>
+    <div class="perf-item">
+      <div>
+        <div class="perf-label">Infragistics Upgrade to 25.2</div>
+        <div class="perf-ticket">IFC-1831, IFC-1832, IFC-1886</div>
+      </div>
+      <div class="perf-impact">Platform current</div>
+    </div>
+    <div class="perf-item">
+      <div>
+        <div class="perf-label">SQL Guardrails — Parameterized Queries</div>
+        <div class="perf-ticket">IFC-1745</div>
+      </div>
+      <div class="perf-impact">Security hardening</div>
+    </div>
+    <div class="perf-item">
+      <div>
+        <div class="perf-label">Desktop Monitor — Kiota Client + LD Feature Flag</div>
+        <div class="perf-ticket">IFC-1823, IFW-5912</div>
+      </div>
+      <div class="perf-impact">Observability</div>
+    </div>
+    <div class="perf-item">
+      <div>
+        <div class="perf-label">Legacy Node API → Platform Migration Plan</div>
+        <div class="perf-ticket">IFW-5730</div>
+      </div>
+      <div class="perf-impact">Future-ready</div>
+    </div>
+  </div>
+
+  <!-- ============ WHAT'S NEXT ============ -->
+  <h2 id="whats-next">What's Next</h2>
+
+  <div class="feature-card">
+    <h3>Continuing into 26.8</h3>
+    <ul class="demo-steps">
+      <li>Org Access Groups — complete migration tooling and full integration</li>
+      <li>Rev Rec — expanded formula variable library, customer onboarding</li>
+      <li>Bill Review — AG Grid evaluation results informing next-gen grid direction</li>
+      <li>Desktop Monitor — production deployment after staging validation</li>
+      <li>Platform API migration — executing the Node → Platform migration plan</li>
+    </ul>
+  </div>
+
+  <div style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1.5px solid var(--gray-300); font-family: var(--mono); font-size: 0.7rem; color: var(--gray-500);">
+    Generated from Jira · IFC + IFW · Fix Version: unanet-26-7 · Status: Done · 139 issues
+  </div>
+
+</main>
+</div>
+</body>
+</html>

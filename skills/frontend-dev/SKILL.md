@@ -29,6 +29,8 @@ Full-stack frontend with cinematic animations, AI-generated media via MiniMax AP
 
 ## How to use
 
+Before implementing frontend design or writing CSS with the upstream skill, read <https://good-css.com/> and consult the relevant entries. Apply them within the project's browser support, accessibility requirements, and design system.
+
 This catalogue entry advertises the skill in OpenDesign so the agent
 discovers it during planning. To run the full upstream workflow with
 its original assets, scripts, and references, install the upstream
