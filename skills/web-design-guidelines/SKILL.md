@@ -33,6 +33,8 @@ od:
 
 Review files for compliance with Web Interface Guidelines.
 
+When a review includes implementing CSS or frontend design fixes, first read <https://good-css.com/> and consult the entries relevant to those changes. Apply them within the project's browser support, accessibility requirements, and design system.
+
 ## How It Works
 
 1. Load the pinned guidelines from [`references/guidelines.md`](references/guidelines.md) — this is the default, reproducible execution path

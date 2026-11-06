@@ -8,6 +8,7 @@ import type { QueuedSubmissionRequest, UserSubmissionReceipt } from "@open-desig
 // result changes behavior must preserve failure as a typed error instead.
 
 import { coalescedGet, evictCoalescedGet } from '../lib/coalesced-get';
+import { peekProjectBootstrap } from './project-bootstrap';
 import { isDaemonProxyConnectionFailure } from '../runtime/daemon-proxy-failure';
 import { BackoffController, type BackoffOptions } from '../lib/backoff';
 import { markProjectCreatedByViewer } from '../collab/useProjectCollab';
@@ -383,6 +384,11 @@ export type ProjectRouteBootstrapResult =
   | { kind: 'not-found' }
   | { kind: 'forbidden' }
   | { kind: 'unavailable' };
+
+// `/api/projects/:id/bootstrap` returns the scope payload plus the slices the
+// project-open readers need. The route bootstrap still performs its own
+// scope/detail authorization sequence; this type stays for the endpoint's
+// consumers.
 
 export type FirstOpenTeamProjectBootstrapResult =
   | {
@@ -1842,6 +1848,13 @@ export async function loadTabs(
     // Concurrent mounts share one daemon read per burst (Batch A §4.3); the
     // per-caller cache reconciliation below still runs for every caller.
     const saved = await coalescedGet(requestKey, async () => {
+      // The opening bootstrap already carries the daemon's tab state; join it
+      // rather than spend another tunnel round trip on the same read.
+      const boot = peekProjectBootstrap(projectId, workspaceContext ?? null);
+      if (boot) {
+        const payload = await boot;
+        if (payload && payload.tabs) return normalizeTabsState(payload.tabs);
+      }
       const resp = await fetch(
         `/api/projects/${encodeURIComponent(projectId)}/tabs`,
         workspaceContext

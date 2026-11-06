@@ -112,6 +112,16 @@ const residualAllowedExactPaths = new Set([
   "scripts/plugin-previews-gc.test.mjs",
   "scripts/scaffold-html-ppt-skills.mjs",
   "scripts/sync-hyperframes-skill.mjs",
+  // Maintainer tool that derives the OpenCode-local copy of the
+  // `ai-design-craft` skill from the repo's canonical `skills/` copy.
+  // Kept as .mjs (mirroring sync-hyperframes-skill.mjs) so it runs directly
+  // under Node with no build step, and because it writes outside the repo
+  // to `~/.config/opencode/skills/`.
+  "scripts/sync-ai-design-craft.mjs",
+  // Maintainer tool that reports drift between the vendored `taste-skill`
+  // family in `skills/` and its upstream `Leonxlnx/taste-skill`. Same shape as
+  // sync-hyperframes-skill.mjs: report-only, human reviews the diff.
+  "scripts/sync-taste-skill.mjs",
   "scripts/verify-media-models.mjs",
   // AMR (vela) verifier: ad-hoc dev runner that imports the daemon's compiled
   // `dist/acp.js` and drives a real `vela agent run` against a live model.
@@ -171,6 +181,16 @@ const residualAllowedPathPrefixes = [
   // Node-run skill utilities executed from user workspaces via explicit script
   // paths, and stay as `.mjs` to preserve the upstream skill packaging.
   "skills/web-clone/scripts/",
+  // Vendored upstream taste-skill v2 (Leonxlnx/taste-skill) runtime helpers:
+  // draw.mjs deals researched directions out of `library/`, inspect.mjs probes
+  // a real browser over CDP, lint.mjs checks the house style. They ship as the
+  // upstream `.mjs` files because SKILL.md tells the agent to run them by path,
+  // and staying byte-faithful to upstream keeps the vendored copy diffable.
+  "skills/taste-skill/scripts/",
+  // Same vendored skill: `assets/base.css` + `assets/base.js` are the upstream
+  // baseline stylesheet and browser helper the dealt directions build on, kept
+  // verbatim. Same precedent as `design-templates/html-ppt/assets/`.
+  "skills/taste-skill/assets/",
   // Vendored upstream Last30Days runtime helper used by the engine (design template).
   "design-templates/last30days/scripts/lib/vendor/",
   // Vendored upstream html-ppt runtime assets (lewislulu/html-ppt-skill, design template).

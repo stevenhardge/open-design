@@ -220,6 +220,7 @@ import {
   endHomeAttachmentUploads,
   settleHomeAttachmentUpload,
 } from './state/home-attachment-handoff';
+import { startProjectBootstrap } from './state/project-bootstrap';
 import {
   bootstrapFirstOpenTeamProjectRoute,
   bootstrapProjectRoute,
@@ -4298,6 +4299,10 @@ function AppInner() {
       }
     }
     const openingAuthorizationGeneration = projectAuthorizationGenerationRef.current;
+    // Kick the one-shot project payload as soon as the opening authority is
+    // known, so ProjectView's file/folder/tab readers join it instead of
+    // issuing their own tunnel round trips.
+    void startProjectBootstrap(id, openingContext);
     const openingScopeKey = projectListScopeKey(openingContext);
     const expectedWorkspaceId = openingContext?.workspaceId ?? null;
     const hintMatchesOpeningScope =
@@ -5245,6 +5250,11 @@ function AppInner() {
       // A refresh has no card witness. Let its scoped catalog supply the
       // binding before probing a Team project without request authority.
       if (!exactOpenContext && (projectsLoading || workspaceContextLoading)) return;
+      // Overlap the project payload with the scope/detail authorization instead
+      // of waiting for both hops to finish first. A wrong guess costs one
+      // harmless parallel request; a right one starts files/folders/tabs a full
+      // round trip earlier.
+      void startProjectBootstrap(projectId, exactOpenContext ?? workspaceContextRef.current ?? null);
       const bootstrap = await bootstrapProjectRoute(projectId, {
         accountGeneration,
         exactContext: exactOpenContext,
@@ -5254,6 +5264,9 @@ function AppInner() {
       // invalidate it; only a real account boundary can.
       if (cancelled || accountChanged()) return;
       if (bootstrap.kind === 'found') {
+        // Warm the one-shot project payload before ProjectView mounts, so the
+        // file/folder/tab readers join it instead of firing their own requests.
+        void startProjectBootstrap(projectId, bootstrap.scope?.context ?? null);
         routeProjectSnapshotRef.current = {
           project: bootstrap.project,
           accountGeneration,
@@ -5673,6 +5686,17 @@ function AppInner() {
     await syncConfigToDaemon(next, { allowOnboardingReset: true });
   }, []);
 
+  // SettingsDialog is reached by NAVIGATING to /settings — it is not an overlay on
+  // the project route. By the time it renders, `route.kind` is 'home' and the
+  // project is gone from the URL, so any project-scoped section has to be told
+  // which project the user came from. Remembered here rather than read off the
+  // route. A ref, not state: App already re-renders on the route change and we
+  // only ever need the latest value.
+  const lastProjectIdRef = useRef<string | null>(null);
+  if (route.kind === 'project') lastProjectIdRef.current = route.projectId;
+  const settingsActiveProjectId =
+    route.kind === 'project' ? route.projectId : lastProjectIdRef.current;
+
   const renderSettingsSurface = (presentation: 'modal' | 'page') => (
     <SettingsDialog
       presentation={presentation}
@@ -5689,6 +5713,7 @@ function AppInner() {
           ? projects.find((project) => project.id === route.projectId)?.workspaceId ?? null
           : null
       }
+      activeProjectId={settingsActiveProjectId}
       composioConfigLoading={composioConfigLoading}
       onPersist={handleConfigPersist}
       onSilentUpdatePreferenceChange={handleSilentUpdatePreferenceChange}

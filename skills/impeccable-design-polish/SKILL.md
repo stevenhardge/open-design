@@ -37,6 +37,8 @@ od:
 
 Use this skill as the post-generation pass for an existing design. It should not restart the project from scratch; it should make the current artifact sharper, more usable, and closer to something a designer would ship.
 
+Before implementing visual or CSS changes, read <https://good-css.com/> and consult the entries relevant to the issues being fixed. Apply them within the project's browser support, accessibility requirements, and design system.
+
 ## Follow-Up Modes
 
 - **Audit**: identify the highest-impact issues in hierarchy, spacing, color, type, interaction states, responsiveness, and accessibility.

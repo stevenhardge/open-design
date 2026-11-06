@@ -28,6 +28,8 @@ Opinionated, evolving constraints to guide agents when building interfaces. Usef
 
 ## How to use
 
+Before using these constraints to make frontend design decisions or write CSS, read <https://good-css.com/> and consult the entries relevant to the interface. Apply them within the project's browser support and accessibility requirements.
+
 This catalogue entry advertises the skill in OpenDesign so the agent
 discovers it during planning. To run the full upstream workflow with
 its original assets, scripts, and references, install the upstream

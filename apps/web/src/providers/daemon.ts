@@ -1183,17 +1183,37 @@ export async function fetchChatRunStatus(
   runId: string,
   workspaceContext?: WorkspaceCollabContext | null,
 ): Promise<ChatRunStatusResponse | null> {
-  try {
-    const resp = await fetch(`/api/runs/${encodeURIComponent(runId)}`, {
-      ...(workspaceContext
-        ? { headers: workspaceProjectHeaders(workspaceContext) }
-        : {}),
-    });
-    if (!resp.ok) return null;
-    return (await resp.json()) as ChatRunStatusResponse;
-  } catch {
-    return null;
-  }
+  // Several surfaces hydrate the same run (replay scan, reconnect banner,
+  // message row). Collapse those into one read per burst and retain the
+  // settled answer briefly so a retry loop does not re-pay the round trip.
+  // Scoped by account generation + workspace so an identity switch cannot
+  // reuse another scope's status.
+  // 0.27.0 note: the settled answer is no longer retained, not even briefly.
+  // Upstream fixtures now require a fresh read per (principal, mount) — the
+  // server captures identity at request time (see the blocked-history
+  // hydration fixture), so sharing a settled body across mounts would hand a
+  // caller a proof it did not itself trigger. Join-only coalescing keeps the
+  // round-trip savings for genuinely concurrent readers only.
+  const key = `chat-run-status:${currentWorkspaceAccountGeneration()}:${workspaceContext?.workspaceId ?? ''}:${runId}`;
+  return coalescedGet(
+    key,
+    async () => {
+      try {
+        const resp = await fetch(`/api/runs/${encodeURIComponent(runId)}`, {
+          ...(workspaceContext
+            ? { headers: workspaceProjectHeaders(workspaceContext) }
+            : {}),
+        });
+        if (!resp.ok) return null;
+        return (await resp.json()) as ChatRunStatusResponse;
+      } catch {
+        return null;
+      }
+    },
+    // Like registry's IN_FLIGHT_SHARE_ONLY_MS: join a still-open request, then
+    // evict. Nothing settled is ever shared.
+    0,
+  );
 }
 
 // PR #3157: Antigravity's auth banner can offer a one-click "open

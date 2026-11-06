@@ -1,0 +1,79 @@
+{
+  "$schema": "https://open-design.ai/schemas/plugin.v1.json",
+  "specVersion": "1.0.0",
+  "name": "design-system-bird-site-dev",
+  "title": "Bird Site Dev",
+  "title_i18n": {
+    "en": "Bird Site Dev"
+  },
+  "version": "0.1.0",
+  "description": "Dark intelligence dashboard for civic advocacy and policy research. Layered near-black surfaces, cyan accent, monospace metadata, tinted-glass badges, and high information density.",
+  "description_i18n": {
+    "en": "Dark intelligence dashboard for civic advocacy and policy research. Layered near-black surfaces, cyan accent, monospace metadata, tinted-glass badges, and high information density."
+  },
+  "license": "MIT",
+  "tags": [
+    "design-system",
+    "design",
+    "dark-dashboard",
+    "intelligence",
+    "civic-tech"
+  ],
+  "od": {
+    "kind": "scenario",
+    "taskKind": "new-generation",
+    "mode": "design-system",
+    "scenario": "design",
+    "surface": "web",
+    "useCase": {
+      "query": {
+        "en": "Generate a {{artifactKind}} using the Bird Site Dev design system. Stay faithful to its dark surface scale, cyan accent, monospace metadata typography, tinted-glass badge pattern, and component vocabulary as documented in DESIGN.md."
+      }
+    },
+    "inputs": [
+      {
+        "name": "artifactKind",
+        "label": "Artifact kind",
+        "type": "select",
+        "options": [
+          "dashboard",
+          "data page",
+          "research view",
+          "campaign tracker",
+          "detail page"
+        ],
+        "default": "dashboard"
+      },
+      {
+        "name": "brief",
+        "label": "Brief",
+        "type": "text",
+        "placeholder": "What should the page communicate?"
+      }
+    ],
+    "context": {
+      "designSystem": {
+        "ref": "bird-site-dev",
+        "primary": true
+      },
+      "assets": [
+        "./DESIGN.md"
+      ]
+    },
+    "pipeline": {
+      "stages": [
+        {
+          "id": "generate",
+          "atoms": [
+            "file-write",
+            "live-artifact"
+          ]
+        }
+      ]
+    },
+    "capabilities": [
+      "prompt:inject",
+      "fs:write"
+    ]
+  }
+}

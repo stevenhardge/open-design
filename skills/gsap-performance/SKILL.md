@@ -31,6 +31,8 @@ od:
 
 Apply when optimizing GSAP animations for smooth 60fps, reducing layout/paint cost, or when the user asks about performance, jank, or best practices for fast animations.
 
+Before writing or changing CSS as part of an optimization, read <https://good-css.com/> and consult the relevant interaction or motion entries. Check browser support, accessibility, and the project's existing tokens.
+
 **Related skills:** Build animations with **gsap-core** (transforms, autoAlpha) and **gsap-timeline**; for ScrollTrigger performance see **gsap-scrolltrigger**.
 
 ## Prefer Transform and Opacity

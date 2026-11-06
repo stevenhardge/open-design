@@ -68,6 +68,7 @@ import {
 import { ExportDiagnosticsRow } from './ExportDiagnosticsButton';
 import { Icon } from './Icon';
 import { LabsSection } from './LabsSection';
+import { ProjectInstructionsCard } from './ProjectInstructionsCard';
 import { defaultAgentModelId, effectiveAgentModelChoice } from './agentModelSelection';
 import {
   CUSTOM_MODEL_SENTINEL,
@@ -463,6 +464,12 @@ interface Props {
   initialHighlight?: SettingsHighlight;
   /** Workspace id persisted on the currently-open project, when any. */
   persistedProjectWorkspaceId?: string | null;
+  /**
+   * The project the user was last in, supplied by App. NOT read from the route:
+   * opening Settings navigates to /settings, so `route.kind` is 'home' by the
+   * time a project-scoped section renders.
+   */
+  activeProjectId?: string | null;
   providerModelsCache?: ProviderModelsCache;
   /**
    * Persist the current draft. Invoked by the dialog's autosave loop on
@@ -1510,6 +1517,7 @@ export function SettingsDialog({
   initialSection = 'general',
   initialHighlight = null,
   persistedProjectWorkspaceId = null,
+  activeProjectId = null,
   onPersist,
   onSilentUpdatePreferenceChange,
   onPersistComposioKey,
@@ -6075,6 +6083,10 @@ export function SettingsDialog({
                   }
                 />
               </div>
+              <ProjectInstructionsCardSection
+                projectId={activeProjectId}
+                workspaceContext={workspaceContext}
+              />
             </section>
           ) : null}
 
@@ -8894,6 +8906,22 @@ function IntegrationsSection() {
  * the user that per-project persistence requires opening a project
  * first. That matches the actual scope of the wire-up.
  */
+function ProjectInstructionsCardSection({
+  projectId,
+  workspaceContext,
+}: {
+  projectId: string | null;
+  workspaceContext: WorkspaceCollabContext | null;
+}) {
+  if (!projectId) return null;
+  return (
+    <ProjectInstructionsCard
+      projectId={projectId}
+      workspaceContext={workspaceContext}
+    />
+  );
+}
+
 function CritiqueTheaterSection({
   callerWorkspaceContext,
   persistedProjectWorkspaceId,

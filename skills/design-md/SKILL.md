@@ -15,6 +15,8 @@ od:
 
 # design-md
 
+When a DESIGN.md task involves frontend design choices or CSS tokens, first read <https://good-css.com/> and consult the relevant entries. Keep the spec consistent with the project's browser support, accessibility requirements, and existing design system.
+
 > Curated from Google Labs (Stitch).
 
 ## What it does

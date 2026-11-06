@@ -28,6 +28,8 @@ Translate Figma designs into production-ready code with 1:1 visual fidelity. Use
 
 ## How to use
 
+Before translating a Figma design into frontend code or writing CSS with the upstream skill, read <https://good-css.com/> and consult the relevant entries. Apply them within the design's intent, browser support, and accessibility requirements.
+
 This catalogue entry advertises the skill in OpenDesign so the agent
 discovers it during planning. To run the full upstream workflow with
 its original assets, scripts, and references, install the upstream

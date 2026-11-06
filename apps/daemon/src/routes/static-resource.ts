@@ -11,7 +11,10 @@ import {
   enforceTeamResourceCopyAllowed,
   type TeamResourceStateProvider,
 } from '../collab/team-resource-state.js';
-import { detectAgents, detectAgentsStream } from '../agents.js';
+import {
+  detectAgentsCached,
+  detectAgentsStreamCached,
+} from '../agents.js';
 import {
   SkillImportError,
   deleteUserSkill,
@@ -444,6 +447,10 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
   app.get('/api/agents', async (req, res) => {
     const wantsStream =
       req.query.stream === '1' || req.query.stream === 'true';
+    // Probes are expensive (one CLI spawn per registered agent); callers can
+    // force a re-scan with `?refresh=1` after installing or re-authing a CLI.
+    const wantsRefresh =
+      req.query.refresh === '1' || req.query.refresh === 'true';
     let config;
     try {
       config = await readAppConfig(RUNTIME_DATA_DIR);
@@ -455,7 +462,7 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
 
     if (!wantsStream) {
       try {
-        const list = await detectAgents(agentCliEnv);
+        const list = await detectAgentsCached(agentCliEnv, { refresh: wantsRefresh });
         res.json({ agents: list });
       } catch (err: any) {
         res.status(500).json({ error: String(err) });
@@ -478,7 +485,7 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
       aborted = true;
     });
     try {
-      for await (const agent of detectAgentsStream(agentCliEnv)) {
+      for await (const agent of detectAgentsStreamCached(agentCliEnv, { refresh: wantsRefresh })) {
         if (aborted) break;
         res.write(`event: agent\ndata: ${JSON.stringify(agent)}\n\n`);
       }

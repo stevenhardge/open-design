@@ -6,6 +6,11 @@ export {
 } from './runtimes/registry.js';
 export { detectAgents, detectAgentsStream } from './runtimes/detection.js';
 export {
+  detectAgentsCached,
+  detectAgentsStreamCached,
+  invalidateAgentDetectionCache,
+} from './runtimes/detection-cache.js';
+export {
   resolveOnPath,
   inspectAgentExecutableResolution,
   resolveAgentExecutable,

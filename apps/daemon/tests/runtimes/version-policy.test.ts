@@ -127,6 +127,7 @@ describe('runtime version policy', () => {
     // `packages/dsh-runtime` obey the same rule, so a line we accept here but
     // do not add there is a version we bless and then cannot equip.
     ['0.1.2-rc.1', undefined],
+    ['0.2.1-rc.2', undefined],
     // A stable release on a line we support should not read as untested.
     ['0.1.1', undefined],
     // Still off the line, still warns. The point is to stop pinning, not to

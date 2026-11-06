@@ -139,6 +139,30 @@ function peerCanInstall(ranges: Record<string, string>, version: string): boolea
   });
 }
 
+/** Package releases do not always share the CLI's version tuple. */
+function rc2CompanionsCanInstall(ranges: Record<string, string>): boolean {
+  const companionVersions: Record<string, string> = {
+    '@deepseek-ai/dsh-agent': '0.2.1-rc.2',
+    '@deepseek-ai/dsh-agent-default-model': '0.2.1-rc.2',
+    '@deepseek-ai/dsh-invariants': '0.2.0-rc.2',
+    '@deepseek-ai/dsh-llm': '0.2.1-rc.2',
+    '@deepseek-ai/dsh-session': '0.2.1-rc.2',
+  };
+  return Object.entries(companionVersions).every(([name, version]) => {
+    const range = ranges[name];
+    return range !== undefined && peerCanInstall({ [name]: range }, version);
+  });
+}
+
+function companionsCanInstall(
+  ranges: Record<string, string>,
+  dshVersion: string,
+): boolean {
+  return dshVersion === '0.2.1-rc.2'
+    ? rc2CompanionsCanInstall(ranges)
+    : peerCanInstall(ranges, dshVersion);
+}
+
 // Two authorities decide whether a DeepSeek Harness version works, and they can
 // disagree silently in the direction that hurts: the daemon suppressing the
 // "untested" warning for a version whose companion cannot install is worse than
@@ -160,6 +184,7 @@ describe('accepted DeepSeek Harness versions can actually install their companio
     '0.1.2',
     '0.1.2-rc.1',
     '0.2.0-rc.1',
+    '0.2.1-rc.2',
   ];
 
   it('never claims support for a version the peer ranges reject', async () => {
@@ -171,7 +196,7 @@ describe('accepted DeepSeek Harness versions can actually install their companio
     expect(Object.keys(ranges).length).toBeGreaterThan(0);
 
     const overclaimed = MATRIX.filter(
-      (version) => accepts(def, version) && !peerCanInstall(ranges, version),
+      (version) => accepts(def, version) && !companionsCanInstall(ranges, version),
     );
 
     expect(overclaimed).toEqual([]);
@@ -200,6 +225,10 @@ describe('accepted DeepSeek Harness versions can actually install their companio
     // a user who installs `@deepseek-ai/dsh` without naming a version gets.
     expect(accepts(def, '0.1.2-rc.1')).toBe(true);
     expect(peerCanInstall(ranges, '0.1.2-rc.1')).toBe(true);
+
+    // RC2 is verified against the 0.2.1 runtime package line.
+    expect(accepts(def, '0.2.1-rc.2')).toBe(true);
+    expect(rc2CompanionsCanInstall(ranges)).toBe(true);
   });
 
   it('refuses a release line neither authority has been widened to', async () => {
